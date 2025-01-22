@@ -134,6 +134,8 @@ def apply_labels(service, msg_id, labels):
 
     label_ids = []
     
+    #labels, filter to only those that are not zero length
+    labels = [label for label in labels if len(label) > 0] 
     for label_name in labels:
         label_id = cached_labels.get(label_name)
         print(f"==> Processing label: {label_name}")
