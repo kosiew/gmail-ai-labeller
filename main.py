@@ -11,7 +11,7 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
 GPT4ALL_MODEL="mistral-7b-instruct-v0"
-LABELS=["programming", "news", "machine_learning", "etc"]
+LABELS=["programming", "news", "job", "machine_learning", "etc"]
 LABEL_PROCESSED="processed"
 MAX_CONTEXT=2048
 MAX_CHARACTERS=MAX_CONTEXT*4 - 150
