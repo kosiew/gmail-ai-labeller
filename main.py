@@ -85,7 +85,7 @@ def classify_email_with_llm(content):
         # If an error occurs, default to "Do Not Archive"
         return ["error"]
 
-def apply_labels(service, msg_id, labels)
+def apply_labels(service, msg_id, labels):
     """
     Create (if needed) and apply Gmail labels to the given message.
     """
@@ -148,6 +148,7 @@ def fetch_emails():
     
     # Gmail tab labels
     TABS = ["INBOX", "CATEGORY_SOCIAL", "CATEGORY_PROMOTIONS", "CATEGORY_UPDATES", "CATEGORY_FORUMS"]
+    TABS = ["CATEGORY_UPDATES"]
     processed_label_id = cached_labels.get(LABEL_PROCESSED)
     
     for tab in TABS:
