@@ -66,7 +66,7 @@ def classify_email_with_llm(content):
         prompt = (
             "Here are some labels.\n"
             f"{labels}\n"
-            "Please return a list of applicable labels eg [label1,label2].\n"
+            "Please only return a list of applicable labels without explanation eg [label1,label2].\n"
             f"for this content:{truncated_content}"
         )
         print(f"==> Generated prompt: {prompt}")
