@@ -103,16 +103,20 @@ def classify_email_with_llm(content):
         print(f"==> LLM response: {stdout}")
         try:
             # extract [....] from the stdout
-            stdout = extract_bracketed_content(stdout)
-            # the stdout looks like this
-            #  [label1,label2]
-            # remove the square brackets
-            stdout = stdout[1:-1]
-            # split the labels
-            classification = stdout.split(",")
-            # remove quotes ', " if any
-            classification = [label.strip().replace("'", "").replace('"', '') for label in classification]
-            print(f"==> Parsed classification: {classification}")
+            bracketed_content = extract_bracketed_content(stdout)
+            if not bracketed_content:
+                print("==> No bracketed content found")
+                classification = ["etc"]
+            else:
+                # the stdout looks like this
+                #  [label1,label2]
+                # remove the square brackets
+                stdout = bracketed_content
+                # split the labels
+                classification = stdout.split(",")
+                # remove quotes ', " if any
+                classification = [label.strip().replace("'", "").replace('"', '') for label in classification]
+                print(f"==> Parsed classification: {classification}")
         except Exception as e:
             print(f"==> Error while parsing classification: {e}")
             classification = ["etc"]
