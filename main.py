@@ -210,46 +210,45 @@ def fetch_emails():
     print("✅ Finished fetch_emails successfully!")
 
 
+def fetch_paginated_emails(service, tab, next_page_token):
+    """
+    Fetch emails from a specific Gmail tab, excluding archived and processed messages.
+    """
+    results = service.users().messages().list(
+        userId="me",
+        labelIds=[tab],
+        q=f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent",  # Exclude archived and processed messages
+        pageToken=next_page_token,
+    ).execute()
+
+    messages = results.get("messages", [])
+    next_page_token = results.get("nextPageToken")  # Check for next page
+
+    print(f"==> Fetched {len(messages)} messages from tab: {tab}")
+    return messages, next_page_token
+
 def fetch_and_process_emails(service, tab):
     next_page_token = None  # Start pagination
     total_fetched = 0
+    total_labelled = 0
 
     while True:
-        # Fetch emails (paginate if needed)
-        results = (
-            service.users()
-            .messages()
-            .list(
-                userId="me",
-                labelIds=[tab],
-                q=f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent",  # Exclude archived and processed messages
-                pageToken=next_page_token,
-            )
-            .execute()
-        )
-
-        messages = results.get("messages", [])
-        next_page_token = results.get("nextPageToken")  # Check for next page
+        messages, next_page_token = fetch_paginated_emails(service, tab, next_page_token)
         total_fetched += len(messages)
-
-        print(
-            f"==> Fetched {len(messages)} messages from tab: {tab}, Total: {total_fetched}"
-        )
 
         if not messages:
             print(f"==> No messages found in {tab}.")
             break  # Stop if no messages exist
-
+        
         for msg in messages:
             process_message(service, msg)
+            total_labelled += 1
 
         # If no more pages, break out of the loop
         if not next_page_token:
             break
 
-    print(
-        f"==> Finished fetching all messages from tab: {tab}. Total fetched: {total_fetched}"
-    )
+    print(f"==> Finished fetching all messages from tab: {tab}. Total fetched: {total_fetched}, total labelled: {total_labelled}")
 
 
 def process_message(service, msg):
