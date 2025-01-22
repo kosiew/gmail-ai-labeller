@@ -12,6 +12,9 @@ from googleapiclient.discovery import build
 GPT4ALL_MODEL="orca-mini-3b-gguf2-q4_0"
 LABELS=["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED="processed"
+MAX_CONTEXT=2048
+MAX_CHARACTERS=MAX_CONTEXT*4 - 150
+
 cached_labels = None
 
 def authenticate_gmail():
@@ -56,34 +59,44 @@ def classify_email_with_llm(content):
     Returns a string: either "Archive" or "Do Not Archive".
     """
     labels = ",".join(LABELS)
+    truncated_content = content[:MAX_CHARACTERS]  # Limit content 
     try:
         print("==> Starting classify_email_with_llm")
         prompt = (
             "Here are some labels.\n"
             f"{labels}\n"
-            "Please return a list of applicable labels.\n"
-            f"for this content:{content}"
+            "Please return a list of applicable labels eg [label1,label2].\n"
+            f"for this content:{truncated_content}"
         )
         print(f"==> Generated prompt: {prompt}")
         
+        
+        
         result = subprocess.run(
-            ["llm", "complete", "--model", GPT4ALL_MODEL, prompt],
+            ["llm", "--model", GPT4ALL_MODEL, f"{prompt}"],
             capture_output=True,
             text=True
         )
-        print(f"==> LLM response: {result.stdout.strip()}")
+        
+        # extract the labels from result.stdout.strip
+        stdout = result.stdout.strip()
+        print(f"==> LLM response: {stdout}")
+        # result is in this format
+        # 'label1: programming\nlabel2: news\nlabel3: machine_learning'
+        lines = stdout.split("\n")
+        classification = []
+        for line in lines:
+            label, value = line.split(":")
+            classification.append(value.strip())
 
-        classification = result.stdout.strip()
-        # classification is labels delimited with comma, 
-        # return a list of labels
-        classification = classification.split(",")
         print(f"==> Parsed classification: {classification}")
         return classification
 
     except Exception as e:
         print(f"==> Error in classify_email_with_llm: {e}")
         # If an error occurs, default to "Do Not Archive"
-        return ["error"]
+        error_msg = f"Error: {e}"
+        return [error_msg]
 
 def init_cached_labels(service):
     """
