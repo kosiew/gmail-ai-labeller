@@ -84,7 +84,6 @@ def classify_email_with_llm(content):
             "Please only return a list of applicable labels in square brackets without explanation eg [label1,label2].\n"
             f"for this content:{truncated_content}"
         )
-        print(f"==> Generated prompt: {prompt}")
         
         result = subprocess.run(
             ["llm", "--model", GPT4ALL_MODEL, f"{prompt}"],
@@ -232,21 +231,28 @@ def fetch_and_process_emails(service, tab):
 
 def process_message(service, msg):
     print(f"==> Processing message ID: {msg['id']}")
+    subject, full_content = extract_message_content(service, msg)
+
+    # Classify via LLM
+    labels = classify_email_with_llm(full_content)
+    print(f"==> {subject} - Classified labels: {labels}")
+    
+    apply_labels(service, msg['id'], labels)
+    print(f"==> Applied labels to message ID: {msg['id']}")
+
+def extract_message_content(service, msg):
     msg_data = service.users().messages().get(
         userId='me', 
         id=msg['id'], 
         format='full'   # 'full' to get the entire message payload
     ).execute()
     
-    full_content = get_email_content(msg_data)
-    print(f"==> Full content of the email: {full_content[:200]}...")  # Limit log output to 200 chars
-
-    # Classify via LLM
-    labels = classify_email_with_llm(full_content)
-    print(f"==> Classified labels: {labels}")
+     # Extract the subject
+    headers = msg_data.get('payload', {}).get('headers', [])
+    subject = next((header['value'] for header in headers if header['name'] == 'Subject'), '(No Subject)')
     
-    apply_labels(service, msg['id'], labels)
-    print(f"==> Applied labels to message ID: {msg['id']}")
+    full_content = get_email_content(msg_data)
+    return subject,full_content
 
 def get_email_content(msg_data):
     # Get the full text from the message payload
