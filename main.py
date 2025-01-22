@@ -215,7 +215,8 @@ def fetch_emails():
             if not messages:
                 print(f"==> No messages found in {tab}.")
                 break  # Stop if no messages exist
-
+            total_labelled = 0
+            
             for msg in messages:
                 print(f"==> Processing message ID: {msg['id']}")
                 msg_data = service.users().messages().get(
@@ -264,12 +265,14 @@ def fetch_emails():
                 
                 apply_labels(service, msg['id'], labels)
                 print(f"==> Applied labels to message ID: {msg['id']}")
+                
+                total_labelled += 1
 
             # If no more pages, break out of the loop
             if not next_page_token:
                 break
 
-        print(f"==> Finished fetching all messages from tab: {tab}. Total fetched: {total_fetched}")
+        print(f"==> Finished fetching all messages from tab: {tab}. Total fetched: {total_fetched}, total labelled: {total_labelled}")
 
     print("✅ Finished fetch_emails successfully!")
 
