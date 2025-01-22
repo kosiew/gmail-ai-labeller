@@ -96,12 +96,17 @@ def classify_email_with_llm(content):
 
         # extract the labels from result.stdout.strip
         stdout = result.stdout.strip()
-        # the stdout looks like this
-        #  [label1,label2]
-        # remove the square brackets
-        stdout = stdout[1:-1]
-        # split the labels
-        classification = stdout.split(",")
+        try:
+            # the stdout looks like this
+            #  [label1,label2]
+            # remove the square brackets
+            stdout = stdout[1:-1]
+            # split the labels
+            classification = stdout.split(",")
+            print(f"==> Parsed classification: {classification}")
+        except Exception as e:
+            print(f"==> Error while parsing classification: {e}")
+            classification = ["etc"]
 
         print(f"==> Parsed classification: {classification}")
         return classification
