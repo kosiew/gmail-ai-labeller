@@ -53,7 +53,17 @@ def authenticate_gmail():
     return creds
 
 def extract_bracketed_content(text):
-    return re.findall(r'\[(.*?)\]', text, re.DOTALL)
+    """
+    Extract content within square brackets, split by commas,
+    and return a list of trimmed items.
+    """
+    bracketed_content = re.findall(r'\[(.*?)\]', text, re.DOTALL)
+    if not bracketed_content:
+        return []
+    
+    # Split the first match by commas and trim each item
+    items = [item.strip() for item in bracketed_content[0].split(',')]
+    return items
 
 def classify_email_with_llm(content):
     """
@@ -81,22 +91,6 @@ def classify_email_with_llm(content):
             text=True
         )
         
-        # extract the labels from result.stdout.strip
-        # stdout = result.stdout.strip()
-        # print(f"==> LLM response: {stdout}")
-        # # result is in this format
-        # # 'label1: programming\nlabel2: news\nlabel3: machine_learning'
-        # lines = stdout.split("\n")
-        # classification = []
-        # for line in lines:
-        #     label, value = line.split(":")
-        #     classification.append(value.strip())
-            
-        # stdout looks like this
-        #  Here are the applicable labels for the given content:
-        # 
-        #- Programming
-        #- News    
 
         # extract the labels from result.stdout.strip
         stdout = result.stdout.strip()
