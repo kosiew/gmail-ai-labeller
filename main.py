@@ -84,7 +84,7 @@ def classify_email_with_llm(content):
             "Here are valid labels.\n"
             f"{labels}\n"
             "Please only return a list of applicable labels in square brackets without explanation eg [label1,label2].\n"
-            f"for this content:{truncated_content}"
+            f"for this content:\n{truncated_content}"
         )
 
         result = subprocess.run(
