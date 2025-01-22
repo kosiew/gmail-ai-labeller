@@ -13,7 +13,7 @@ from googleapiclient.discovery import build
 GPT4ALL_MODEL="mistral-7b-instruct-v0"
 LABELS=["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED="processed"
-OLDER_THAN="30d"
+OLDER_THAN="60d"
 MAX_CONTEXT=2048
 MAX_CHARACTERS=MAX_CONTEXT*4 - 150
 MAX_CHARACTERS=4000
@@ -208,7 +208,7 @@ def fetch_and_process_emails(service, tab):
         results = service.users().messages().list(
             userId='me', 
             labelIds=[tab], 
-            q=f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN}",  # Exclude archived and processed messages
+            q=f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent",  # Exclude archived and processed messages
             pageToken=next_page_token
         ).execute()
 
