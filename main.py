@@ -139,8 +139,9 @@ def apply_labels(service, msg_id, labels):
 
     label_ids = []
     labels = [label.lower() for label in labels if 0 < len(label) <= 20]    
-    # filter to 3 shortest labels
-    labels = sorted(labels, key=lambda x: len(x))[:3]
+    # filter to 2 shortest labels
+    labels = sorted(labels, key=lambda x: len(x))[:2]
+    labels.append(LABEL_PROCESSED)  # Add the "processed" label 
     for label_name in labels:
         label_id = cached_labels.get(label_name)
         print(f"==> Processing label: {label_name}")
@@ -261,7 +262,6 @@ def fetch_emails():
                 labels = classify_email_with_llm(full_content)
                 print(f"==> Classified labels: {labels}")
                 
-                labels.append(LABEL_PROCESSED)  # Add the "processed" label 
                 apply_labels(service, msg['id'], labels)
                 print(f"==> Applied labels to message ID: {msg['id']}")
 
