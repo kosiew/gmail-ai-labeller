@@ -11,11 +11,9 @@ from googleapiclient.discovery import build
 
 GPT4ALL_MODEL="orca-mini-3b-gguf2-q4_0"
 LABELS=["programming", "news", "machine_learning", "etc"]
-LABELS=["programming", "news", "machine_learning"]
 LABEL_PROCESSED="processed"
 MAX_CONTEXT=2048
-MAX_CHARACTERS=MAX_CONTEXT*4 - 1000
-MAX_CHARACTERS=4000
+MAX_CHARACTERS=MAX_CONTEXT*4 - 150
 
 cached_labels = None
 
@@ -65,10 +63,14 @@ def classify_email_with_llm(content):
     try:
         print("==> Starting classify_email_with_llm")
         prompt = (
-            f"Is this content '{truncated_content}' marketing material or spam?"
-            "Reply strictly with only 'YES' or 'NO'. Do not include any explanations or extra words."
+            "Here are some labels.\n"
+            f"{labels}\n"
+            "Please return a list of applicable labels eg [label1,label2].\n"
+            f"for this content:{truncated_content}"
         )
         print(f"==> Generated prompt: {prompt}")
+        
+        
         
         result = subprocess.run(
             ["llm", "--model", GPT4ALL_MODEL, f"{prompt}"],
@@ -79,16 +81,13 @@ def classify_email_with_llm(content):
         # extract the labels from result.stdout.strip
         stdout = result.stdout.strip()
         print(f"==> LLM response: {stdout}")
-        # # result is in this format
-        # # 'label1: programming\nlabel2: news\nlabel3: machine_learning'
-        # lines = stdout.split("\n")
-        # classification = []
-        # for line in lines:
-        #     label, value = line.split(":")
-        #     classification.append(value.strip())
+        # result is in this format
+        # 'label1: programming\nlabel2: news\nlabel3: machine_learning'
+        lines = stdout.split("\n")
         classification = []
-        if stdout == "YES":
-            classification = ["marketing"]
+        for line in lines:
+            label, value = line.split(":")
+            classification.append(value.strip())
 
         print(f"==> Parsed classification: {classification}")
         return classification
