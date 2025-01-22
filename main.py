@@ -182,7 +182,6 @@ def fetch_emails():
     print("==> Starting fetch_emails")
     
     # Authenticate and build service
-    
     creds = authenticate_gmail()
     service = build('gmail', 'v1', credentials=creds)
     
@@ -195,86 +194,97 @@ def fetch_emails():
     
     for tab in TABS:
         print(f"==> Fetching emails from tab: {tab}")
-        next_page_token = None  # Start pagination
-        total_fetched = 0
-
-        while True:
-            # Fetch emails (paginate if needed)
-            results = service.users().messages().list(
-                userId='me', 
-                labelIds=[tab], 
-                pageToken=next_page_token
-            ).execute()
-
-            messages = results.get('messages', [])
-            next_page_token = results.get('nextPageToken')  # Check for next page
-            total_fetched += len(messages)
-
-            print(f"==> Fetched {len(messages)} messages from tab: {tab}, Total: {total_fetched}")
-
-            if not messages:
-                print(f"==> No messages found in {tab}.")
-                break  # Stop if no messages exist
-            total_labelled = 0
-            
-            for msg in messages:
-                print(f"==> Processing message ID: {msg['id']}")
-                msg_data = service.users().messages().get(
-                    userId='me', 
-                    id=msg['id'], 
-                    format='full'   # 'full' to get the entire message payload
-                ).execute()
-                
-                # Check if the message already has the "processed" label
-                msg_label_ids = msg_data.get('labelIds', [])
-                
-                if processed_label_id and processed_label_id in msg_label_ids:
-                    print(f"==> Message ID: {msg['id']} already has the 'processed' label. Skipping.")
-                    continue
-                # Get the full text from the message payload
-                email_body = ""
-                payload = msg_data.get('payload', {})
-
-                # If the payload has parts, iterate over them
-                parts = payload.get('parts', [])
-                if parts:
-                    for part in parts:
-                        mime_type = part.get('mimeType')
-                        if mime_type == 'text/plain':
-                            data = part['body'].get('data')
-                            if data:
-                                decoded_data = base64.urlsafe_b64decode(data).decode('utf-8')
-                                email_body += decoded_data
-                                print(f"==> Decoded part of email body: {decoded_data[:100]}...")  # Print only first 100 chars
-                else:
-                    # Single-part message might be here
-                    body_data = payload.get('body', {}).get('data')
-                    if body_data:
-                        decoded_data = base64.urlsafe_b64decode(body_data).decode('utf-8')
-                        email_body += decoded_data
-                        print(f"==> Decoded single-part email body: {decoded_data[:100]}...")  # Print only first 100 chars
-                
-                # Fallback to snippet if there's no body
-                snippet = msg_data.get('snippet', '')
-                full_content = email_body if email_body else snippet
-                print(f"==> Full content of the email: {full_content[:200]}...")  # Limit log output to 200 chars
-
-                # Classify via LLM
-                labels = classify_email_with_llm(full_content)
-                print(f"==> Classified labels: {labels}")
-                
-                apply_labels(service, msg['id'], labels)
-                print(f"==> Applied labels to message ID: {msg['id']}")
-                
-                total_labelled += 1
-
-            # If no more pages, break out of the loop
-            if not next_page_token:
-                break
-
-        print(f"==> Finished fetching all messages from tab: {tab}. Total fetched: {total_fetched}, total labelled: {total_labelled}")
-
+        fetch_and_process_emails(service, tab, processed_label_id)
+    
     print("✅ Finished fetch_emails successfully!")
+
+def fetch_and_process_emails(service, tab, processed_label_id):
+    next_page_token = None  # Start pagination
+    total_fetched = 0
+    total_labelled = 0
+
+    while True:
+        # Fetch emails (paginate if needed)
+        results = service.users().messages().list(
+            userId='me', 
+            labelIds=[tab], 
+            q="-label:ARCHIVE -label:processed",  # Exclude archived and processed messages
+            pageToken=next_page_token
+        ).execute()
+
+        messages = results.get('messages', [])
+        next_page_token = results.get('nextPageToken')  # Check for next page
+        total_fetched += len(messages)
+
+        print(f"==> Fetched {len(messages)} messages from tab: {tab}, Total: {total_fetched}")
+
+        if not messages:
+            print(f"==> No messages found in {tab}.")
+            break  # Stop if no messages exist
+        
+        for msg in messages:
+            process_message(service, msg, processed_label_id)
+            total_labelled += 1
+
+        # If no more pages, break out of the loop
+        if not next_page_token:
+            break
+
+    print(f"==> Finished fetching all messages from tab: {tab}. Total fetched: {total_fetched}, total labelled: {total_labelled}")
+
+def process_message(service, msg, processed_label_id):
+    print(f"==> Processing message ID: {msg['id']}")
+    msg_data = service.users().messages().get(
+        userId='me', 
+        id=msg['id'], 
+        format='full'   # 'full' to get the entire message payload
+    ).execute()
+    
+    # Check if the message already has the "processed" label
+    msg_label_ids = msg_data.get('labelIds', [])
+    
+    if processed_label_id and processed_label_id in msg_label_ids:
+        print(f"==> Message ID: {msg['id']} already has the 'processed' label. Skipping.")
+        return
+
+    full_content = get_email_content(msg_data)
+    print(f"==> Full content of the email: {full_content[:200]}...")  # Limit log output to 200 chars
+
+    # Classify via LLM
+    labels = classify_email_with_llm(full_content)
+    print(f"==> Classified labels: {labels}")
+    
+    apply_labels(service, msg['id'], labels)
+    print(f"==> Applied labels to message ID: {msg['id']}")
+
+def get_email_content(msg_data):
+    # Get the full text from the message payload
+    email_body = ""
+    payload = msg_data.get('payload', {})
+
+    # If the payload has parts, iterate over them
+    parts = payload.get('parts', [])
+    if parts:
+        for part in parts:
+            mime_type = part.get('mimeType')
+            if mime_type == 'text/plain':
+                data = part['body'].get('data')
+                if data:
+                    decoded_data = base64.urlsafe_b64decode(data).decode('utf-8')
+                    email_body += decoded_data
+                    print(f"==> Decoded part of email body: {decoded_data[:100]}...")  # Print only first 100 chars
+    else:
+        # Single-part message might be here
+        body_data = payload.get('body', {}).get('data')
+        if body_data:
+            decoded_data = base64.urlsafe_b64decode(body_data).decode('utf-8')
+            email_body += decoded_data
+            print(f"==> Decoded single-part email body: {decoded_data[:100]}...")  # Print only first 100 chars
+    
+    # Fallback to snippet if there's no body
+    snippet = msg_data.get('snippet', '')
+    full_content = email_body if email_body else snippet
+    return full_content
 
             
 
