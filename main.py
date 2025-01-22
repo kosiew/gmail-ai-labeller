@@ -2,6 +2,7 @@ import os
 import pickle
 import subprocess
 import base64
+import base64
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -10,6 +11,8 @@ from googleapiclient.discovery import build
 
 GPT4ALL_MODEL="orca-mini-3b-gguf2-q4_0"
 LABELS=["programming", "news", "machine_learning", "etc"]
+LABEL_PROCESSED="processed"
+cached_labels = None
 
 def authenticate_gmail():
     """
@@ -82,30 +85,29 @@ def classify_email_with_llm(content):
         # If an error occurs, default to "Do Not Archive"
         return ["error"]
 
-def apply_labels(service, msg_id, labels):
+def apply_labels(service, msg_id, labels)
     """
     Create (if needed) and apply Gmail labels to the given message.
     """
     print("==> Starting apply_labels")
-    
-    # Get existing labels
-    gmail_labels = service.users().labels().list(userId='me').execute().get('labels', [])
-    print(f"==> Fetched existing labels: {gmail_labels}")
-    
+    global cached_labels 
+    if cached_labels is None:
+        cached_labels = {}
+        # Get existing labels
+        gmail_labels = service.users().labels().list(userId='me').execute().get('labels', [])
+        print(f"==> Fetched existing labels: {gmail_labels}")
+        for label in gmail_labels:
+            cached_labels[label['name']] = label['id']
+    else:
+        print("==> Using cached labels")
+
     label_ids = []
     
     for label_name in labels:
-        label_id = None
+        label_id = cached_labels.get(label_name)
         print(f"==> Processing label: {label_name}")
         
-        # Check if label exists
-        for label in gmail_labels:
-            if label['name'] == label_name:
-                label_id = label['id']
-                print(f"==> Found existing label: {label_name} with ID: {label_id}")
-                break
-        
-        # If not, create a new label
+        # If label does not exist, create a new label
         if not label_id:
             print(f"==> Creating new label: {label_name}")
             new_label = service.users().labels().create(
@@ -117,6 +119,7 @@ def apply_labels(service, msg_id, labels):
                 }
             ).execute()
             label_id = new_label['id']
+            cached_labels[label_name] = label_id
             print(f"==> Created new label: {label_name} with ID: {label_id}")
         
         label_ids.append(label_id)
@@ -130,11 +133,12 @@ def apply_labels(service, msg_id, labels):
     ).execute()
     print("==> Finished apply_labels")
 
-def fetch_emails(max_results=10):
+
+def fetch_emails():
     """
-    Fetch emails from Gmail inbox, classify them, and label if necessary.
-    Returns a dictionary of { "Archive": [...], "Do Not Archive": [...] } 
-    containing snippets or partial contents for convenience.
+    Fetch ALL emails from Gmail (Inbox + Tabs: Social, Promotions, Updates, Forums),
+    classify them, and apply labels accordingly.
+    Uses pagination to fetch ALL messages.
     """
     print("==> Starting fetch_emails")
     
@@ -142,72 +146,95 @@ def fetch_emails(max_results=10):
     creds = authenticate_gmail()
     service = build('gmail', 'v1', credentials=creds)
     
+    # Gmail tab labels
     TABS = ["INBOX", "CATEGORY_SOCIAL", "CATEGORY_PROMOTIONS", "CATEGORY_UPDATES", "CATEGORY_FORUMS"]
-
+    processed_label_id = cached_labels.get(LABEL_PROCESSED)
+    
     for tab in TABS:
         print(f"==> Fetching emails from tab: {tab}")
-        results = service.users().messages().list(
-            userId='me', 
-            labelIds=[tab], 
-            maxResults=max_results
-        ).execute()
-        messages = results.get('messages', [])
-        print(f"==> Fetched {len(messages)} messages from tab: {tab}")
-        
-        for msg in messages:
-            print(f"==> Processing message ID: {msg['id']}")
-            msg_data = service.users().messages().get(
-                userId='me', 
-                id=msg['id'], 
-                format='full'   # 'full' to get the entire message payload
-            ).execute()
-            
-            # Get the full text from the message payload
-            email_body = ""
-            payload = msg_data.get('payload', {})
-            
-            # If the payload has parts, iterate over them
-            parts = payload.get('parts', [])
-            if parts:
-                for part in parts:
-                    mime_type = part.get('mimeType')
-                    if mime_type == 'text/plain':
-                        data = part['body'].get('data')
-                        if data:
-                            decoded_data = base64.urlsafe_b64decode(data).decode('utf-8')
-                            email_body += decoded_data
-                            print(f"==> Decoded part of email body: {decoded_data}")
-            else:
-                # Single-part message might be here
-                body_data = payload.get('body', {}).get('data')
-                if body_data:
-                    decoded_data = base64.urlsafe_b64decode(body_data).decode('utf-8')
-                    email_body += decoded_data
-                    print(f"==> Decoded single-part email body: {decoded_data}")
-            
-            # Fallback to snippet if there's no body
-            snippet = msg_data.get('snippet', '')
-            full_content = email_body if email_body else snippet
-            print(f"==> Full content of the email: {full_content}")
+        next_page_token = None  # Start pagination
+        total_fetched = 0
 
-            # Classify via LLM
-            labels = classify_email_with_llm(full_content)
-            print(f"==> Classified labels: {labels}")
-        
-            apply_labels(service, msg['id'], labels)
-            print(f"==> Applied labels to message ID: {msg['id']}")
-    
-    print("==> Finished fetch_emails")
+        while True:
+            # Fetch emails (paginate if needed)
+            results = service.users().messages().list(
+                userId='me', 
+                labelIds=[tab], 
+                pageToken=next_page_token
+            ).execute()
+
+            messages = results.get('messages', [])
+            next_page_token = results.get('nextPageToken')  # Check for next page
+            total_fetched += len(messages)
+
+            print(f"==> Fetched {len(messages)} messages from tab: {tab}, Total: {total_fetched}")
+
+            if not messages:
+                print(f"==> No messages found in {tab}.")
+                break  # Stop if no messages exist
+
+            for msg in messages:
+                print(f"==> Processing message ID: {msg['id']}")
+                msg_data = service.users().messages().get(
+                    userId='me', 
+                    id=msg['id'], 
+                    format='full'   # 'full' to get the entire message payload
+                ).execute()
+                
+                # Check if the message already has the "processed" label
+                msg_label_ids = msg_data.get('labelIds', [])
+                
+                if processed_label_id and processed_label_id in msg_label_ids:
+                    print(f"==> Message ID: {msg['id']} already has the 'processed' label. Skipping.")
+                    continue
+                # Get the full text from the message payload
+                email_body = ""
+                payload = msg_data.get('payload', {})
+
+                # If the payload has parts, iterate over them
+                parts = payload.get('parts', [])
+                if parts:
+                    for part in parts:
+                        mime_type = part.get('mimeType')
+                        if mime_type == 'text/plain':
+                            data = part['body'].get('data')
+                            if data:
+                                decoded_data = base64.urlsafe_b64decode(data).decode('utf-8')
+                                email_body += decoded_data
+                                print(f"==> Decoded part of email body: {decoded_data[:100]}...")  # Print only first 100 chars
+                else:
+                    # Single-part message might be here
+                    body_data = payload.get('body', {}).get('data')
+                    if body_data:
+                        decoded_data = base64.urlsafe_b64decode(body_data).decode('utf-8')
+                        email_body += decoded_data
+                        print(f"==> Decoded single-part email body: {decoded_data[:100]}...")  # Print only first 100 chars
+                
+                # Fallback to snippet if there's no body
+                snippet = msg_data.get('snippet', '')
+                full_content = email_body if email_body else snippet
+                print(f"==> Full content of the email: {full_content[:200]}...")  # Limit log output to 200 chars
+
+                # Classify via LLM
+                labels = classify_email_with_llm(full_content)
+                print(f"==> Classified labels: {labels}")
+                
+                labels.append(LABEL_PROCESSED)  # Add the "processed" label 
+                apply_labels(service, msg['id'], labels)
+                print(f"==> Applied labels to message ID: {msg['id']}")
+
+            # If no more pages, break out of the loop
+            if not next_page_token:
+                break
+
+        print(f"==> Finished fetching all messages from tab: {tab}. Total fetched: {total_fetched}")
+
+    print("✅ Finished fetch_emails successfully!")
+
             
 
 def main():
-    categorized_emails = fetch_emails(max_results=10)
+    fetch_emails()
     
-    print("\nCategorized Emails:")
-    for category, emails in categorized_emails.items():
-        print(f"\n{category} ({len(emails)}):")
-        for email_text in emails:
-            print(f"  - {email_text[:100]}...")  # Print a portion for demonstration
-
 if __name__ == '__main__':
     main()
