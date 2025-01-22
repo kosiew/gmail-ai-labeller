@@ -155,22 +155,8 @@ def apply_labels(service, msg_id, labels):
         # If label does not exist, create a new label
         if not label_id:
             print(f"==> Creating new label: {label_name}")
-            new_label = (
-                service.users()
-                .labels()
-                .create(
-                    userId="me",
-                    body={
-                        "name": label_name,
-                        "labelListVisibility": "labelShow",
-                        "messageListVisibility": "show",
-                    },
-                )
-                .execute()
-            )
-            label_id = new_label["id"]
+            label_id = create_new_label(service, label_name)
             cached_labels[label_name] = label_id
-            print(f"==> Created new label: {label_name} with ID: {label_id}")
 
         label_ids.append(label_id)
 
@@ -180,6 +166,23 @@ def apply_labels(service, msg_id, labels):
         userId="me", id=msg_id, body={"addLabelIds": label_ids}
     ).execute()
     print("==> Finished apply_labels")
+
+def create_new_label(service, label_name):
+    new_label = (
+        service.users()
+        .labels()
+        .create(
+            userId="me",
+            body={
+                "name": label_name,
+                "labelListVisibility": "labelShow",
+                "messageListVisibility": "show",
+            },
+        )
+        .execute()
+    )
+    label_id = new_label["id"]
+    return label_id
 
 
 def fetch_emails():
