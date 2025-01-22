@@ -85,21 +85,24 @@ def classify_email_with_llm(content):
         # If an error occurs, default to "Do Not Archive"
         return ["error"]
 
+def init_cached_labels(service):
+    """
+    Fetch and cache Gmail labels.
+    """
+    print("==> Fetching and caching Gmail labels")
+    global cached_labels
+    cached_labels = {}
+    gmail_labels = service.users().labels().list(userId='me').execute().get('labels', [])
+    print(f"==> Fetched existing labels: {gmail_labels}")
+    for label in gmail_labels:
+        cached_labels[label['name']] = label['id']
+
 def apply_labels(service, msg_id, labels):
     """
     Create (if needed) and apply Gmail labels to the given message.
     """
     print("==> Starting apply_labels")
     global cached_labels 
-    if cached_labels is None:
-        cached_labels = {}
-        # Get existing labels
-        gmail_labels = service.users().labels().list(userId='me').execute().get('labels', [])
-        print(f"==> Fetched existing labels: {gmail_labels}")
-        for label in gmail_labels:
-            cached_labels[label['name']] = label['id']
-    else:
-        print("==> Using cached labels")
 
     label_ids = []
     
@@ -143,8 +146,11 @@ def fetch_emails():
     print("==> Starting fetch_emails")
     
     # Authenticate and build service
+    
     creds = authenticate_gmail()
     service = build('gmail', 'v1', credentials=creds)
+    
+    init_cached_labels(service)
     
     # Gmail tab labels
     TABS = ["INBOX", "CATEGORY_SOCIAL", "CATEGORY_PROMOTIONS", "CATEGORY_UPDATES", "CATEGORY_FORUMS"]
