@@ -14,6 +14,7 @@ LABELS=["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED="processed"
 MAX_CONTEXT=2048
 MAX_CHARACTERS=MAX_CONTEXT*4 - 150
+MAX_CHARACTERS=5000
 
 cached_labels = None
 
@@ -69,8 +70,6 @@ def classify_email_with_llm(content):
             f"for this content:{truncated_content}"
         )
         print(f"==> Generated prompt: {prompt}")
-        
-        
         
         result = subprocess.run(
             ["llm", "--model", GPT4ALL_MODEL, f"{prompt}"],
