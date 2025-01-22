@@ -188,17 +188,16 @@ def fetch_emails():
     init_cached_labels(service)
     
     # Gmail tab labels
-    TABS = ["INBOX", "CATEGORY_SOCIAL", "CATEGORY_PROMOTIONS", "CATEGORY_UPDATES", "CATEGORY_FORUMS"]
+    # TABS = ["INBOX", "CATEGORY_SOCIAL", "CATEGORY_PROMOTIONS", "CATEGORY_UPDATES", "CATEGORY_FORUMS"]
     TABS = ["CATEGORY_UPDATES"]
-    processed_label_id = cached_labels.get(LABEL_PROCESSED)
     
     for tab in TABS:
         print(f"==> Fetching emails from tab: {tab}")
-        fetch_and_process_emails(service, tab, processed_label_id)
+        fetch_and_process_emails(service, tab)
     
     print("✅ Finished fetch_emails successfully!")
 
-def fetch_and_process_emails(service, tab, processed_label_id):
+def fetch_and_process_emails(service, tab):
     next_page_token = None  # Start pagination
     total_fetched = 0
     total_labelled = 0
@@ -208,7 +207,7 @@ def fetch_and_process_emails(service, tab, processed_label_id):
         results = service.users().messages().list(
             userId='me', 
             labelIds=[tab], 
-            q="-label:ARCHIVE -label:processed",  # Exclude archived and processed messages
+            q=f"-label:ARCHIVE -label:{LABEL_PROCESSED}",  # Exclude archived and processed messages
             pageToken=next_page_token
         ).execute()
 
@@ -223,7 +222,7 @@ def fetch_and_process_emails(service, tab, processed_label_id):
             break  # Stop if no messages exist
         
         for msg in messages:
-            process_message(service, msg, processed_label_id)
+            process_message(service, msg)
             total_labelled += 1
 
         # If no more pages, break out of the loop
@@ -232,7 +231,7 @@ def fetch_and_process_emails(service, tab, processed_label_id):
 
     print(f"==> Finished fetching all messages from tab: {tab}. Total fetched: {total_fetched}, total labelled: {total_labelled}")
 
-def process_message(service, msg, processed_label_id):
+def process_message(service, msg):
     print(f"==> Processing message ID: {msg['id']}")
     msg_data = service.users().messages().get(
         userId='me', 
@@ -240,13 +239,6 @@ def process_message(service, msg, processed_label_id):
         format='full'   # 'full' to get the entire message payload
     ).execute()
     
-    # Check if the message already has the "processed" label
-    msg_label_ids = msg_data.get('labelIds', [])
-    
-    if processed_label_id and processed_label_id in msg_label_ids:
-        print(f"==> Message ID: {msg['id']} already has the 'processed' label. Skipping.")
-        return
-
     full_content = get_email_content(msg_data)
     print(f"==> Full content of the email: {full_content[:200]}...")  # Limit log output to 200 chars
 
