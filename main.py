@@ -10,7 +10,7 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
 GPT4ALL_MODEL="orca-mini-3b-gguf2-q4_0"
-LABELS=["programming", "news", "machine_learning", "etc"]
+LABELS=["python_development", "rust_development", "web_development", "news", "machine_learning", "job_opening", "etc"]
 LABEL_PROCESSED="processed"
 MAX_CONTEXT=2048
 MAX_CHARACTERS=MAX_CONTEXT*4 - 150
