@@ -9,7 +9,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
-GPT4ALL_MODEL="Meta-Llama-3"
+GPT4ALL_MODEL="mistral-7b-instruct-v0"
 LABELS=["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED="processed"
 MAX_CONTEXT=2048
