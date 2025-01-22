@@ -13,7 +13,7 @@ from googleapiclient.discovery import build
 GPT4ALL_MODEL="mistral-7b-instruct-v0"
 LABELS=["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED="processed"
-OLDER_THAN="60d"
+OLDER_THAN="30d"
 MAX_CONTEXT=2048
 MAX_CHARACTERS=MAX_CONTEXT*4 - 150
 MAX_CHARACTERS=4000
