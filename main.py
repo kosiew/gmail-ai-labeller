@@ -256,7 +256,7 @@ def process_message(service, msg):
 
     # Classify via LLM
     labels = classify_email_with_llm(full_content)
-    print(f"==> {subject} - Classified labels: {labels}")
+    print(f"==> subject: {subject} - Classified labels: {labels}")
 
     apply_labels(service, msg["id"], labels)
     print(f"==> Applied labels to message ID: {msg['id']}")
