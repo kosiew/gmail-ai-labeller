@@ -10,7 +10,7 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
 GPT4ALL_MODEL="orca-mini-3b-gguf2-q4_0"
-LABELS=["python_development", "rust_development", "web_development", "news", "machine_learning", "job_opening", "etc"]
+LABELS=["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED="processed"
 MAX_CONTEXT=2048
 MAX_CHARACTERS=MAX_CONTEXT*4 - 150
@@ -136,9 +136,9 @@ def apply_labels(service, msg_id, labels):
     global cached_labels 
 
     label_ids = []
-    labels = [label.lower() for label in labels if len(label) > 0]    
-    
-    #labels, filter to only those that are not zero length
+    labels = [label.lower() for label in labels if 0 < len(label) <= 20]    
+    # filter to 3 shortest labels
+    labels = sorted(labels, key=lambda x: len(x))[:3]
     for label_name in labels:
         label_id = cached_labels.get(label_name)
         print(f"==> Processing label: {label_name}")
