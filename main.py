@@ -13,7 +13,7 @@ from googleapiclient.discovery import build
 GPT4ALL_MODEL="mistral-7b-instruct-v0"
 LABELS=["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED="processed"
-OLDER_THAN="60d"
+OLDER_THAN="40d"
 MAX_CONTEXT=2048
 MAX_CHARACTERS=MAX_CONTEXT*4 - 150
 MAX_CHARACTERS=4000
@@ -201,7 +201,6 @@ def fetch_emails():
 def fetch_and_process_emails(service, tab):
     next_page_token = None  # Start pagination
     total_fetched = 0
-    total_labelled = 0
 
     while True:
         # Fetch emails (paginate if needed)
@@ -224,13 +223,12 @@ def fetch_and_process_emails(service, tab):
         
         for msg in messages:
             process_message(service, msg)
-            total_labelled += 1
 
         # If no more pages, break out of the loop
         if not next_page_token:
             break
 
-    print(f"==> Finished fetching all messages from tab: {tab}. Total fetched: {total_fetched}, total labelled: {total_labelled}")
+    print(f"==> Finished fetching all messages from tab: {tab}. Total fetched: {total_fetched}")
 
 def process_message(service, msg):
     print(f"==> Processing message ID: {msg['id']}")
