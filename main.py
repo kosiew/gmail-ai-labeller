@@ -12,7 +12,7 @@ from googleapiclient.discovery import build
 GPT4ALL_MODEL = "mistral-7b-instruct-v0"
 LABELS = ["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED = "processed"
-OLDER_THAN = "30d"
+OLDER_THAN = "36d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
 MAX_CHARACTERS = 4000
@@ -151,7 +151,6 @@ def apply_labels(service, msg_id, labels):
     labels.append(LABEL_PROCESSED)  # Add the "processed" label
     for label_name in labels:
         label_id = cached_labels.get(label_name)
-        print(f"==> Processing label: {label_name}")
 
         # If label does not exist, create a new label
         if not label_id:
