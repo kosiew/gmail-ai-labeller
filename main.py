@@ -14,7 +14,7 @@ LABELS=["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED="processed"
 MAX_CONTEXT=2048
 MAX_CHARACTERS=MAX_CONTEXT*4 - 150
-MAX_CHARACTERS=5000
+MAX_CHARACTERS=4000
 
 cached_labels = None
 
@@ -64,7 +64,7 @@ def classify_email_with_llm(content):
     try:
         print("==> Starting classify_email_with_llm")
         prompt = (
-            "Here are some labels.\n"
+            "Here are valid labels.\n"
             f"{labels}\n"
             "Please only return a list of applicable labels without explanation eg [label1,label2].\n"
             f"for this content:{truncated_content}"
@@ -96,16 +96,12 @@ def classify_email_with_llm(content):
 
         # extract the labels from result.stdout.strip
         stdout = result.stdout.strip()
-        print(f"==> LLM response: {stdout}")
-        try:
-            classification = stdout.split("\n")[1:]
-            classification = [label.strip("- ") for label in classification]
-            #if zero length, default to etc
-            if len(classification) == 0:
-                classification = ['etc']
-        except Exception as e:
-            print(f"==> Error while parsing classification: {e}")
-            classification = ['etc']
+        # the stdout looks like this
+        #  [label1,label2]
+        # remove the square brackets
+        stdout = stdout[1:-1]
+        # split the labels
+        classification = stdout.split(",")
 
         print(f"==> Parsed classification: {classification}")
         return classification
