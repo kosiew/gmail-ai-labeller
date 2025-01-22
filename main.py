@@ -108,6 +108,8 @@ def classify_email_with_llm(content):
             classification = ["etc"]
 
         print(f"==> Parsed classification: {classification}")
+        # ensure every item in classification is in LABELS
+        classification = [label.lower() for label in classification if label.lower() in LABELS]
         return classification
 
     except Exception as e:
