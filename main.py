@@ -100,6 +100,9 @@ def classify_email_with_llm(content):
         try:
             classification = stdout.split("\n")[1:]
             classification = [label.strip("- ") for label in classification]
+            #if zero length, default to etc
+            if len(classification) == 0:
+                classification = ['etc']
         except Exception as e:
             print(f"==> Error while parsing classification: {e}")
             classification = ['etc']
