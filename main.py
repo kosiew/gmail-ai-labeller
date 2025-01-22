@@ -70,7 +70,7 @@ def classify_email_with_llm(content):
         prompt = (
             "Here are valid labels.\n"
             f"{labels}\n"
-            "Please only return a list of applicable labels without explanation eg [label1,label2].\n"
+            "Please only return a list of applicable labels in square brackets without explanation eg [label1,label2].\n"
             f"for this content:{truncated_content}"
         )
         print(f"==> Generated prompt: {prompt}")
@@ -102,20 +102,12 @@ def classify_email_with_llm(content):
         stdout = result.stdout.strip()
         print(f"==> LLM response: {stdout}")
         try:
-            # extract [....] from the stdout
-            bracketed_content = extract_bracketed_content(stdout)
-            if not bracketed_content:
+            # extract [....] as a list of labels
+            classification = extract_bracketed_content(stdout)
+            if not classification:
                 print("==> No bracketed content found")
                 classification = ["etc"]
             else:
-                # the stdout looks like this
-                #  [label1,label2]
-                # remove the square brackets
-                stdout = bracketed_content
-                # split the labels
-                classification = stdout.split(",")
-                # remove quotes ', " if any
-                classification = [label.strip().replace("'", "").replace('"', '') for label in classification]
                 print(f"==> Parsed classification: {classification}")
         except Exception as e:
             print(f"==> Error while parsing classification: {e}")
@@ -138,7 +130,6 @@ def init_cached_labels(service):
     global cached_labels
     cached_labels = {}
     gmail_labels = service.users().labels().list(userId='me').execute().get('labels', [])
-    print(f"==> Fetched existing labels: {gmail_labels}")
     for label in gmail_labels:
         cached_labels[label['name']] = label['id']
 
