@@ -107,9 +107,10 @@ def classify_email_with_llm(content):
             print(f"==> Error while parsing classification: {e}")
             classification = ["etc"]
 
-        print(f"==> Parsed classification: {classification}")
+        print(f"==> classification before sanitize: {classification}")
         # ensure every item in classification is in LABELS
         classification = [label.lower() for label in classification if label.lower() in LABELS]
+        print(f"==> classification sanitized: {classification}")
         return classification
 
     except Exception as e:
