@@ -3,6 +3,7 @@ import pickle
 import subprocess
 import base64
 import base64
+import re
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -51,6 +52,9 @@ def authenticate_gmail():
     print("==> Finished authenticate_gmail")
     return creds
 
+def extract_bracketed_content(text):
+    return re.findall(r'\[(.*?)\]', text, re.DOTALL)
+
 def classify_email_with_llm(content):
     """
     Uses an LLM (via the 'llm' CLI tool) to classify the email text.
@@ -96,13 +100,18 @@ def classify_email_with_llm(content):
 
         # extract the labels from result.stdout.strip
         stdout = result.stdout.strip()
+        print(f"==> LLM response: {stdout}")
         try:
+            # extract [....] from the stdout
+            stdout = extract_bracketed_content(stdout)
             # the stdout looks like this
             #  [label1,label2]
             # remove the square brackets
             stdout = stdout[1:-1]
             # split the labels
             classification = stdout.split(",")
+            # remove quotes ', " if any
+            classification = [label.strip().replace("'", "").replace('"', '') for label in classification]
             print(f"==> Parsed classification: {classification}")
         except Exception as e:
             print(f"==> Error while parsing classification: {e}")
