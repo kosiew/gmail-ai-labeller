@@ -4,9 +4,7 @@ import subprocess
 import base64
 import re
 
-from abc import ABC, abstractmethod
-from typing import List, Tuple
-
+from typing import List, Tuple, Protocol, runtime_checkable
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -19,7 +17,7 @@ LABEL_PROCESSED = "processed"
 OLDER_THAN = "30d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
-MAX_CHARACTERS = 4000  # For demonstration
+MAX_CHARACTERS = 4000  
 
 # -------------------------------------------------------------------------
 #                           Authentication Helper
@@ -59,53 +57,57 @@ def authenticate_gmail():
     return creds
 
 # -------------------------------------------------------------------------
-#                          Interface Definitions
+#                          Protocol Definitions
 # -------------------------------------------------------------------------
 
-class IEmailClassifier(ABC):
+@runtime_checkable
+class IEmailClassifier(Protocol):
     """
-    Interface for an email classifier.
+    Protocol for an email classifier.
     Concrete implementations must provide a `classify` method 
     that returns a list of labels.
     """
-    @abstractmethod
     def classify(self, content: str) -> List[str]:
-        pass
+        ...
 
 
-class IEmailProcessor(ABC):
+@runtime_checkable
+class IEmailProcessor(Protocol):
     """
-    Interface for processing individual emails:
+    Protocol for processing individual emails:
       - extracting subject/body
       - applying labels
     """
-    @abstractmethod
     def get_subject_and_content(self, msg_id: str) -> Tuple[str, str]:
-        """Return the (subject, content) of an email."""
-        pass
+        """
+        Return the (subject, content) of an email.
+        """
+        ...
 
-    @abstractmethod
     def apply_labels(self, msg_id: str, labels: List[str]) -> None:
-        """Apply given labels to the specified message."""
-        pass
+        """
+        Apply given labels to the specified message.
+        """
+        ...
 
 
-class IEmailFetcher(ABC):
+@runtime_checkable
+class IEmailFetcher(Protocol):
     """
-    Interface for fetching emails in pages, 
-    delegating classification & processing to other interfaces.
+    Protocol for fetching emails in pages, 
+    delegating classification & processing to other protocols.
     """
-    @abstractmethod
     def fetch_emails(self) -> None:
-        """Main entry point to fetch and process emails."""
-        pass
-
+        """
+        Main entry point to fetch and process emails.
+        """
+        ...
 
 # -------------------------------------------------------------------------
 #                Concrete Implementation: EmailClassifier
 # -------------------------------------------------------------------------
 
-def extract_bracketed_content(text):
+def extract_bracketed_content(text: str) -> List[str]:
     """
     Helper: Extract content within square brackets, split by commas,
     and return a list of trimmed items.
@@ -116,20 +118,17 @@ def extract_bracketed_content(text):
     items = [item.strip() for item in bracketed_content[0].split(",")]
     return items
 
-class DefaultEmailClassifier(IEmailClassifier):
+class DefaultEmailClassifier:
     """
     Default implementation of IEmailClassifier using a local LLM ('llm' CLI).
+    Conforms to IEmailClassifier by virtue of having a matching `classify` method.
     """
 
-    def __init__(self, model=GPT4ALL_MODEL, valid_labels=None):
+    def __init__(self, model: str = GPT4ALL_MODEL, valid_labels: List[str] = None):
         self.model = model
         self.valid_labels = valid_labels if valid_labels else LABELS
 
     def classify(self, content: str) -> List[str]:
-        """
-        Uses an LLM (via the 'llm' CLI tool) to classify the email text.
-        Returns a list of valid labels.
-        """
         truncated_content = content[:MAX_CHARACTERS]
         try:
             print("==> Starting classify_email_with_llm")
@@ -147,7 +146,6 @@ class DefaultEmailClassifier(IEmailClassifier):
                 capture_output=True,
                 text=True,
             )
-
             stdout = result.stdout.strip()
             print(f"==> LLM response: {stdout}")
 
@@ -161,10 +159,11 @@ class DefaultEmailClassifier(IEmailClassifier):
                 print(f"==> Parsed classification: {classification}")
 
             # Ensure classification is among our valid labels
+            lower_valid_labels = [lbl.lower() for lbl in self.valid_labels]
             classification = [
                 label.lower()
                 for label in classification
-                if label.lower() in [lbl.lower() for lbl in self.valid_labels]
+                if label.lower() in lower_valid_labels
             ]
             print(f"==> classification sanitized: {classification}")
             return classification or ["etc"]
@@ -177,7 +176,7 @@ class DefaultEmailClassifier(IEmailClassifier):
 #               Concrete Implementation: EmailProcessor
 # -------------------------------------------------------------------------
 
-class DefaultEmailProcessor(IEmailProcessor):
+class DefaultEmailProcessor:
     """
     Default implementation of IEmailProcessor:
       - Caches Gmail labels
@@ -301,7 +300,7 @@ class DefaultEmailProcessor(IEmailProcessor):
 #               Concrete Implementation: EmailFetcher
 # -------------------------------------------------------------------------
 
-class DefaultEmailFetcher(IEmailFetcher):
+class DefaultEmailFetcher:
     """
     Default implementation of IEmailFetcher:
       - Retrieves emails via pagination
@@ -310,16 +309,16 @@ class DefaultEmailFetcher(IEmailFetcher):
       - Then instructs the processor to apply labels
     """
 
-    def __init__(self,
-                 service,
-                 processor: IEmailProcessor,
-                 classifier: IEmailClassifier,
-                 tabs=None):
+    def __init__(
+        self,
+        service,
+        processor: IEmailProcessor,
+        classifier: IEmailClassifier,
+        tabs: List[str] = None
+    ):
         self.service = service
         self.processor = processor
         self.classifier = classifier
-
-        # Decide which tabs to fetch (inbox, promotions, etc.)
         self.tabs = tabs or ["CATEGORY_UPDATES"]
 
     def fetch_emails(self) -> None:
@@ -383,6 +382,7 @@ class DefaultEmailFetcher(IEmailFetcher):
         """
         print(f"==> Processing message ID: {msg_id}")
         subject, full_content = self.processor.get_subject_and_content(msg_id)
+
         labels = self.classifier.classify(full_content)
         print(f"==> subject: {subject} - Classified labels: {labels}")
 
@@ -398,17 +398,18 @@ def main():
     creds = authenticate_gmail()
     service = build("gmail", "v1", credentials=creds)
 
-    # 2. Create concrete implementations for our interfaces
+    # 2. Create concrete implementations for our protocols
     processor = DefaultEmailProcessor(service)
-    classifier = DefaultEmailClassifier(
-        model=GPT4ALL_MODEL,
-        valid_labels=LABELS
+    classifier = DefaultEmailClassifier(model=GPT4ALL_MODEL, valid_labels=LABELS)
+    fetcher = DefaultEmailFetcher(
+        service=service,
+        processor=processor,
+        classifier=classifier,
+        tabs=["CATEGORY_UPDATES"]
     )
-    fetcher = DefaultEmailFetcher(service, processor, classifier, tabs=["CATEGORY_UPDATES"])
 
-    # 3. Use the fetcher (which uses the other two) to fetch & process emails
+    # 3. Use the fetcher (which uses the processor & classifier) to fetch & process emails
     fetcher.fetch_emails()
-
 
 if __name__ == "__main__":
     main()
