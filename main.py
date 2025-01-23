@@ -83,7 +83,7 @@ def classify_email_with_llm(content):
         prompt = (
             "Here are valid labels.\n"
             f"{labels}\n"
-            "Please only return a list of applicable labels in square brackets without explanation eg [label1,label2].\n"
+            "Please only return the most applicable label in square brackets without explanation eg [label1].\n"
             f"for this content:\n{truncated_content}"
         )
 
@@ -103,6 +103,8 @@ def classify_email_with_llm(content):
                 print("==> No bracketed content found")
                 classification = ["etc"]
             else:
+                # keep only the first item in the list
+                classification = classification[:1]
                 print(f"==> Parsed classification: {classification}")
         except Exception as e:
             print(f"==> Error while parsing classification: {e}")
