@@ -9,16 +9,16 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
+# ----- Constants -----
 GPT4ALL_MODEL = "mistral-7b-instruct-v0"
 LABELS = ["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED = "processed"
 OLDER_THAN = "30d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
-MAX_CHARACTERS = 4000
+MAX_CHARACTERS = 4000  # Overwrite as demonstration
 
-cached_labels = None
-
+# ----- Top-level Helpers -----
 
 def authenticate_gmail():
     """
@@ -53,7 +53,6 @@ def authenticate_gmail():
     print("==> Finished authenticate_gmail")
     return creds
 
-
 def extract_bracketed_content(text):
     """
     Extract content within square brackets, split by commas,
@@ -62,268 +61,294 @@ def extract_bracketed_content(text):
     bracketed_content = re.findall(r"\[(.*?)\]", text, re.DOTALL)
     if not bracketed_content:
         return []
-
-    # Split the first match by commas and trim each item
     items = [item.strip() for item in bracketed_content[0].split(",")]
     return items
 
+# ----- New Class: EmailClassifier -----
 
-def classify_email_with_llm(content):
+class EmailClassifier:
     """
-    Uses an LLM (via the 'llm' CLI tool) to classify the email text.
-    If it's marketing or not related to Python/Rust/web dev => "Archive"
-    Otherwise => "Do Not Archive"
-
-    Returns a string: either "Archive" or "Do Not Archive".
+    Dedicated class for classifying email content using an LLM.
     """
-    labels = ",".join(LABELS)
-    truncated_content = content[:MAX_CHARACTERS]  # Limit content
-    try:
-        print("==> Starting classify_email_with_llm")
-        prompt = (
-            "Here are valid labels.\n"
-            f"{labels}\n"
-            "Please only return the most applicable label in square brackets without explanation eg [label1].\n"
-            f"for this content:\n{truncated_content}"
-        )
 
-        result = subprocess.run(
-            ["llm", "--model", GPT4ALL_MODEL, f"{prompt}"],
-            capture_output=True,
-            text=True,
-        )
+    def __init__(self, model=GPT4ALL_MODEL, valid_labels=None):
+        self.model = model
+        self.valid_labels = valid_labels if valid_labels else LABELS
 
-        # extract the labels from result.stdout.strip
-        stdout = result.stdout.strip()
-        print(f"==> LLM response: {stdout}")
+    def classify(self, content):
+        """
+        Uses an LLM (via the 'llm' CLI tool) to classify the email text.
+        Returns a list of valid labels.
+        """
+        truncated_content = content[:MAX_CHARACTERS]
         try:
-            # extract [....] as a list of labels
+            print("==> Starting classify_email_with_llm")
+            labels_joined = ",".join(self.valid_labels)
+            prompt = (
+                "Here are valid labels.\n"
+                f"{labels_joined}\n"
+                "Please only return the most applicable label in square brackets "
+                "without explanation eg [label1].\n"
+                f"for this content:\n{truncated_content}"
+            )
+
+            result = subprocess.run(
+                ["llm", "--model", self.model, prompt],
+                capture_output=True,
+                text=True,
+            )
+
+            stdout = result.stdout.strip()
+            print(f"==> LLM response: {stdout}")
+
+            # Extract bracketed content
             classification = extract_bracketed_content(stdout)
             if not classification:
                 print("==> No bracketed content found")
                 classification = ["etc"]
             else:
-                # keep only the first item in the list
-                classification = classification[:1]
+                classification = classification[:1]  # only keep first bracket
                 print(f"==> Parsed classification: {classification}")
+
+            # Ensure classification is among our valid labels
+            classification = [
+                label.lower() for label in classification
+                if label.lower() in [l.lower() for l in self.valid_labels]
+            ]
+            print(f"==> classification sanitized: {classification}")
+            return classification or ["etc"]
+
         except Exception as e:
-            print(f"==> Error while parsing classification: {e}")
-            classification = ["etc"]
+            print(f"==> Error in classify_email_with_llm: {e}")
+            return ["etc"]  # fallback label if error
 
-        print(f"==> classification before sanitize: {classification}")
-        # ensure every item in classification is in LABELS
-        classification = [
-            label.lower() for label in classification if label.lower() in LABELS
-        ]
-        print(f"==> classification sanitized: {classification}")
-        return classification
+# ----- Class: EmailProcessor -----
 
-    except Exception as e:
-        print(f"==> Error in classify_email_with_llm: {e}")
-        # If an error occurs, default to "Do Not Archive"
-        error_msg = f"Error: {e}"
-        return [error_msg]
-
-
-def init_cached_labels(service):
+class EmailProcessor:
     """
-    Fetch and cache Gmail labels.
+    Handles message-level operations:
+      - Caching labels
+      - Creating labels
+      - Applying labels to messages
+      - Extracting message subject & content
     """
-    print("==> Fetching and caching Gmail labels")
-    global cached_labels
-    cached_labels = {}
-    gmail_labels = (
-        service.users().labels().list(userId="me").execute().get("labels", [])
-    )
-    for label in gmail_labels:
-        cached_labels[label["name"]] = label["id"]
 
+    def __init__(self, service):
+        self.service = service
+        self.cached_labels = {}
+        self.init_cached_labels()
 
-def apply_labels(service, msg_id, labels):
-    """
-    Create (if needed) and apply Gmail labels to the given message.
-    """
-    print("==> Starting apply_labels")
-    global cached_labels
-
-    label_ids = []
-    labels = [label.lower() for label in labels if 0 < len(label) <= 20]
-    # filter to 2 shortest labels
-    labels = sorted(labels, key=lambda x: len(x))[:2]
-    labels.append(LABEL_PROCESSED)  # Add the "processed" label
-    for label_name in labels:
-        label_id = cached_labels.get(label_name)
-
-        # If label does not exist, create a new label
-        if not label_id:
-            print(f"==> Creating new label: {label_name}")
-            label_id = create_new_label(service, label_name)
-            cached_labels[label_name] = label_id
-
-        label_ids.append(label_id)
-
-    print(f"==> Applying labels to message ID: {msg_id} with label IDs: {label_ids}")
-    # Apply all labels to the email at once
-    service.users().messages().modify(
-        userId="me", id=msg_id, body={"addLabelIds": label_ids}
-    ).execute()
-    print("==> Finished apply_labels")
-
-def create_new_label(service, label_name):
-    new_label = (
-        service.users()
-        .labels()
-        .create(
-            userId="me",
-            body={
-                "name": label_name,
-                "labelListVisibility": "labelShow",
-                "messageListVisibility": "show",
-            },
+    def init_cached_labels(self):
+        """
+        Fetch and cache Gmail labels.
+        """
+        print("==> Fetching and caching Gmail labels")
+        gmail_labels = (
+            self.service.users().labels().list(userId="me").execute().get("labels", [])
         )
-        .execute()
-    )
-    label_id = new_label["id"]
-    return label_id
+        for label in gmail_labels:
+            # Store label by lower-cased name for easy lookup
+            self.cached_labels[label["name"].lower()] = label["id"]
+
+    def create_new_label(self, label_name):
+        """
+        Create a new label in Gmail.
+        """
+        print(f"==> Creating new label: {label_name}")
+        new_label = (
+            self.service.users()
+            .labels()
+            .create(
+                userId="me",
+                body={
+                    "name": label_name,
+                    "labelListVisibility": "labelShow",
+                    "messageListVisibility": "show",
+                },
+            )
+            .execute()
+        )
+        label_id = new_label["id"]
+        self.cached_labels[label_name.lower()] = label_id
+        return label_id
+
+    def apply_labels(self, msg_id, labels):
+        """
+        Apply Gmail labels to the given message. Creates new labels if needed.
+        """
+        print("==> Starting apply_labels")
+        label_ids = []
+
+        # Limit which labels we apply (e.g., only two shortest)
+        labels = [label.lower() for label in labels if 0 < len(label) <= 20]
+        labels = sorted(labels, key=lambda x: len(x))[:2]
+        labels.append(LABEL_PROCESSED)  # always apply the "processed" label
+
+        for label_name in labels:
+            label_id = self.cached_labels.get(label_name)
+            if not label_id:
+                # If label doesn't exist yet, create it
+                label_id = self.create_new_label(label_name)
+            label_ids.append(label_id)
+
+        print(f"==> Applying labels to message ID: {msg_id} with label IDs: {label_ids}")
+        self.service.users().messages().modify(
+            userId="me", id=msg_id, body={"addLabelIds": label_ids}
+        ).execute()
+        print("==> Finished apply_labels")
+
+    def get_subject_and_content(self, msg_id):
+        """
+        Retrieve the full message data from Gmail, extracting subject + text.
+        """
+        msg_data = (
+            self.service.users()
+            .messages()
+            .get(userId="me", id=msg_id, format="full")
+            .execute()
+        )
+
+        # Extract subject
+        headers = msg_data.get("payload", {}).get("headers", [])
+        subject = next(
+            (header["value"] for header in headers if header["name"] == "Subject"),
+            "(No Subject)",
+        )
+
+        # Extract body text
+        full_content = self._get_email_content(msg_data)
+        return subject, full_content
+
+    def _get_email_content(self, msg_data):
+        """
+        Extract text/plain parts from the full message payload.
+        Fallback to snippet if no text/plain found.
+        """
+        email_body = ""
+        payload = msg_data.get("payload", {})
+        parts = payload.get("parts", [])
+
+        if parts:
+            # Multi-part message
+            for part in parts:
+                mime_type = part.get("mimeType")
+                if mime_type == "text/plain":
+                    data = part["body"].get("data")
+                    if data:
+                        decoded_data = base64.urlsafe_b64decode(data).decode("utf-8")
+                        email_body += decoded_data
+                        print(f"==> Decoded part of email body: {decoded_data[:100]}...")
+        else:
+            # Single-part message
+            body_data = payload.get("body", {}).get("data")
+            if body_data:
+                decoded_data = base64.urlsafe_b64decode(body_data).decode("utf-8")
+                email_body += decoded_data
+                print(f"==> Decoded single-part email body: {decoded_data[:100]}...")
+
+        snippet = msg_data.get("snippet", "")
+        return email_body if email_body else snippet
 
 
-def fetch_emails():
+# ----- Class: EmailFetcher -----
+
+class EmailFetcher:
     """
-    Fetch ALL emails from Gmail (Inbox + Tabs: Social, Promotions, Updates, Forums),
-    classify them, and apply labels accordingly.
-    Uses pagination to fetch ALL messages.
+    Responsible for:
+      - Retrieving emails (via pagination)
+      - Delegating content extraction & label application to EmailProcessor
+      - Delegating classification to EmailClassifier
     """
-    print("==> Starting fetch_emails")
 
-    # Authenticate and build service
+    def __init__(self, service, processor: EmailProcessor, classifier: EmailClassifier):
+        self.service = service
+        self.processor = processor
+        self.classifier = classifier
+        self.tabs = ["CATEGORY_UPDATES"]  # Adjust as needed
+
+    def fetch_emails(self):
+        """
+        Fetch ALL emails from configured tabs and process them.
+        """
+        print("==> Starting fetch_emails")
+        for tab in self.tabs:
+            print(f"==> Fetching emails from tab: {tab}")
+            self._fetch_and_process_emails(tab)
+        print("✅ Finished fetch_emails successfully!")
+
+    def _fetch_and_process_emails(self, tab):
+        next_page_token = None
+        total_fetched = 0
+        total_labelled = 0
+
+        while True:
+            messages, next_page_token = self._fetch_paginated_emails(tab, next_page_token)
+            total_fetched += len(messages)
+            if not messages:
+                print(f"==> No messages found in {tab}.")
+                break
+
+            for msg in messages:
+                self._process_message(msg["id"])
+                total_labelled += 1
+
+            if not next_page_token:
+                break
+
+        print(f"==> Finished fetching from tab: {tab}. "
+              f"Total fetched: {total_fetched}, total labelled: {total_labelled}")
+
+    def _fetch_paginated_emails(self, tab, page_token):
+        """
+        Fetch emails from a specific Gmail tab, excluding archived/processed/sent.
+        """
+        query = f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
+        results = self.service.users().messages().list(
+            userId="me",
+            labelIds=[tab],
+            q=query,
+            pageToken=page_token,
+        ).execute()
+
+        messages = results.get("messages", [])
+        next_page_token = results.get("nextPageToken")
+        print(f"==> Fetched {len(messages)} messages from tab: {tab}")
+        return messages, next_page_token
+
+    def _process_message(self, msg_id):
+        """
+        Process a single message:
+          - Retrieve content (subject/body)
+          - Classify via EmailClassifier
+          - Apply labels via EmailProcessor
+        """
+        print(f"==> Processing message ID: {msg_id}")
+        subject, full_content = self.processor.get_subject_and_content(msg_id)
+        labels = self.classifier.classify(full_content)
+        print(f"==> subject: {subject} - Classified labels: {labels}")
+
+        self.processor.apply_labels(msg_id, labels)
+        print(f"==> Applied labels to message ID: {msg_id}")
+
+
+# ----- Main -----
+
+def main():
+    # 1. Authenticate
     creds = authenticate_gmail()
     service = build("gmail", "v1", credentials=creds)
 
-    init_cached_labels(service)
+    # 2. Create the EmailProcessor (for label management & content extraction)
+    processor = EmailProcessor(service)
 
-    # Gmail tab labels
-    # TABS = ["INBOX", "CATEGORY_SOCIAL", "CATEGORY_PROMOTIONS", "CATEGORY_UPDATES", "CATEGORY_FORUMS"]
-    TABS = ["CATEGORY_UPDATES"]
+    # 3. Create the EmailClassifier (for classification logic)
+    classifier = EmailClassifier(model=GPT4ALL_MODEL, valid_labels=LABELS)
 
-    for tab in TABS:
-        print(f"==> Fetching emails from tab: {tab}")
-        fetch_and_process_emails(service, tab)
+    # 4. Create the EmailFetcher to orchestrate fetching & processing
+    fetcher = EmailFetcher(service, processor, classifier)
 
-    print("✅ Finished fetch_emails successfully!")
-
-
-def fetch_paginated_emails(service, tab, next_page_token):
-    """
-    Fetch emails from a specific Gmail tab, excluding archived and processed messages.
-    """
-    results = service.users().messages().list(
-        userId="me",
-        labelIds=[tab],
-        q=f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent",  # Exclude archived and processed messages
-        pageToken=next_page_token,
-    ).execute()
-
-    messages = results.get("messages", [])
-    next_page_token = results.get("nextPageToken")  # Check for next page
-
-    print(f"==> Fetched {len(messages)} messages from tab: {tab}")
-    return messages, next_page_token
-
-def fetch_and_process_emails(service, tab):
-    next_page_token = None  # Start pagination
-    total_fetched = 0
-    total_labelled = 0
-
-    while True:
-        messages, next_page_token = fetch_paginated_emails(service, tab, next_page_token)
-        total_fetched += len(messages)
-
-        if not messages:
-            print(f"==> No messages found in {tab}.")
-            break  # Stop if no messages exist
-        
-        for msg in messages:
-            process_message(service, msg)
-            total_labelled += 1
-
-        # If no more pages, break out of the loop
-        if not next_page_token:
-            break
-
-    print(f"==> Finished fetching all messages from tab: {tab}. Total fetched: {total_fetched}, total labelled: {total_labelled}")
-
-
-def process_message(service, msg):
-    print(f"==> Processing message ID: {msg['id']}")
-    subject, full_content = extract_message_content(service, msg)
-
-    # Classify via LLM
-    labels = classify_email_with_llm(full_content)
-    print(f"==> subject: {subject} - Classified labels: {labels}")
-
-    apply_labels(service, msg["id"], labels)
-    print(f"==> Applied labels to message ID: {msg['id']}")
-
-
-def extract_message_content(service, msg):
-    msg_data = (
-        service.users()
-        .messages()
-        .get(
-            userId="me",
-            id=msg["id"],
-            format="full",  # 'full' to get the entire message payload
-        )
-        .execute()
-    )
-
-    # Extract the subject
-    headers = msg_data.get("payload", {}).get("headers", [])
-    subject = next(
-        (header["value"] for header in headers if header["name"] == "Subject"),
-        "(No Subject)",
-    )
-
-    full_content = get_email_content(msg_data)
-    return subject, full_content
-
-
-def get_email_content(msg_data):
-    # Get the full text from the message payload
-    email_body = ""
-    payload = msg_data.get("payload", {})
-
-    # If the payload has parts, iterate over them
-    parts = payload.get("parts", [])
-    if parts:
-        for part in parts:
-            mime_type = part.get("mimeType")
-            if mime_type == "text/plain":
-                data = part["body"].get("data")
-                if data:
-                    decoded_data = base64.urlsafe_b64decode(data).decode("utf-8")
-                    email_body += decoded_data
-                    print(
-                        f"==> Decoded part of email body: {decoded_data[:100]}..."
-                    )  # Print only first 100 chars
-    else:
-        # Single-part message might be here
-        body_data = payload.get("body", {}).get("data")
-        if body_data:
-            decoded_data = base64.urlsafe_b64decode(body_data).decode("utf-8")
-            email_body += decoded_data
-            print(
-                f"==> Decoded single-part email body: {decoded_data[:100]}..."
-            )  # Print only first 100 chars
-
-    # Fallback to snippet if there's no body
-    snippet = msg_data.get("snippet", "")
-    full_content = email_body if email_body else snippet
-    return full_content
-
-
-def main():
-    fetch_emails()
+    # 5. Fetch & process all messages
+    fetcher.fetch_emails()
 
 
 if __name__ == "__main__":
