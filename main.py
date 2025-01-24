@@ -395,6 +395,7 @@ class DefaultEmailFetcher:
 #               NEW: Extract Data From Processed Emails
 # -------------------------------------------------------------------------
 
+@app.command()
 def extract_data_from_processed_emails(output_csv: str = "extracted_emails.csv") -> None:    
     """
     Fetches all emails with label 'processed',
@@ -454,7 +455,7 @@ def extract_data_from_processed_emails(output_csv: str = "extracted_emails.csv")
 # -------------------------------------------------------------------------
 #               NEW: Train scikit-learn Model from CSV
 # -------------------------------------------------------------------------
-
+@app.command()
 def train_sklearn_model_from_csv(
     input_csv: str = "extracted_emails.csv",
     model_path: str = "sklearn_email_model.pkl"
