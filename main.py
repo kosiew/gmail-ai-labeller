@@ -11,7 +11,8 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
 # ----- Constants -----
-GPT4ALL_MODEL = "mistral-7b-instruct-v0"
+# GPT4ALL_MODEL = "mistral-7b-instruct-v0"
+GPT4ALL_MODEL = "Phi-3-mini-4k-instruct"
 LABELS = ["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED = "processed"
 OLDER_THAN = "30d"
