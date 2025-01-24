@@ -15,7 +15,6 @@ from typing import (
     Any,
     Optional,
 )
-from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
@@ -83,7 +82,19 @@ def authenticate_gmail():
     print("==> Finished authenticate_gmail")
     return creds
 
+def get_gmail_service() -> build:
+    """
+    Authenticate and return the Gmail API service.
+    """
+    print("==> Authenticating to get Gmail API service")
+    creds = authenticate_gmail()
+    service = build("gmail", "v1", credentials=creds)
+    return service
 
+
+# -------------------------------------------------------------------------
+#                           Email Data Class
+# -------------------------------------------------------------------------
 class EmailData:
     """
     Container for email data.
@@ -152,7 +163,7 @@ class IEmailFetcher(Protocol):
 
 
 # -------------------------------------------------------------------------
-#                Concrete Implementation: EmailClassifier
+#                Concrete Implementations
 # -------------------------------------------------------------------------
 
 
@@ -167,6 +178,24 @@ def extract_bracketed_content(text: str) -> List[str]:
     items = [item.strip() for item in bracketed_content[0].split(",")]
     return items
 
+
+class SklearnEmailClassifier(IEmailClassifier):
+    """
+    A scikit-learn-based classifier that loads a model file (pickle)
+    and predicts labels from email content.
+    """
+
+    def __init__(self, model_path="sklearn_email_model.pkl"):
+        print(f"==> Loading sklearn model from {model_path}")
+        with open(model_path, "rb") as f:
+            self.model = pickle.load(f)
+
+    def classify(self, content: str) -> List[str]:
+        # Make a prediction using the pipeline
+        # You can, if you like, add additional preprocessing steps here
+        prediction = self.model.predict([content])[0]
+        # Return a list of labels (in this simple case, just one predicted label)
+        return [prediction]
 
 class DefaultEmailClassifier:
     """
@@ -221,11 +250,6 @@ class DefaultEmailClassifier:
         except Exception as e:
             print(f"==> Error in classify_email_with_llm: {e}")
             return ["etc"]  # fallback on error
-
-
-# -------------------------------------------------------------------------
-#               Concrete Implementation: EmailProcessor
-# -------------------------------------------------------------------------
 
 
 class DefaultEmailProcessor:
@@ -375,11 +399,6 @@ class DefaultEmailProcessor:
         return email_body if email_body else snippet
 
 
-# -------------------------------------------------------------------------
-#               Concrete Implementation: EmailFetcher
-# -------------------------------------------------------------------------
-
-
 class EmailFetcher:
     """
     Class for fetching emails via pagination.
@@ -452,8 +471,6 @@ class QueryFilterBuilder:
         return " ".join(self.filters)
 
 
-# Example usage:
-
 
 class EmailLabeller:
     """
@@ -483,9 +500,39 @@ class EmailLabeller:
         print(f"==> Applied labels to message ID: {msg_id}")
 
 
+def label(classifier: IEmailClassifier):
+    service = get_gmail_service()
+
+    # Create concrete implementations for our protocols
+    processor = DefaultEmailProcessor(service)
+    labeller = EmailLabeller(processor, classifier)
+    query_builder = QueryFilterBuilder()
+    query_filter = (
+        query_builder.add_filter("-label", "ARCHIVE")
+        .add_filter("-label", LABEL_PROCESSED)
+        .add_filter("-older_than", OLDER_THAN)
+        .add_filter("-in", "sent")
+        .build()
+    )
+    fetcher = EmailFetcher(service, query_filter=query_filter)
+    for email in fetcher.fetch_emails():
+        msg_id = email["id"]
+        labeller.process_message(msg_id)
+
 # -------------------------------------------------------------------------
-#               NEW: Extract Data From Processed Emails
+#                          Typer Commands
 # -------------------------------------------------------------------------
+
+@app.command()
+def llm_label():
+    classifier = DefaultEmailClassifier(model=GPT4ALL_MODEL, valid_labels=LABELS)
+    label(classifier)
+
+
+@app.command()
+def sklearn_label():
+    classifier = SklearnEmailClassifier(model_path="sklearn_email_model.pkl")
+    label(classifier)
 
 
 @app.command()
@@ -533,9 +580,6 @@ def extract_data_from_processed_emails(
     print(f"==> Extracted {counter} 'processed' emails into {output_csv}")
 
 
-# -------------------------------------------------------------------------
-#               NEW: Train scikit-learn Model from CSV
-# -------------------------------------------------------------------------
 @app.command()
 def train_sklearn_model_from_csv(
     input_csv: str = "extracted_emails.csv", model_path: str = "sklearn_email_model.pkl"
@@ -583,74 +627,6 @@ def train_sklearn_model_from_csv(
 
     print(f"==> Trained model saved to '{model_path}'")
 
-
-# -------------------------------------------------------------------------
-#               NEW: Sklearn-based Email Classifier
-# -------------------------------------------------------------------------
-
-
-class SklearnEmailClassifier(IEmailClassifier):
-    """
-    A scikit-learn-based classifier that loads a model file (pickle)
-    and predicts labels from email content.
-    """
-
-    def __init__(self, model_path="sklearn_email_model.pkl"):
-        print(f"==> Loading sklearn model from {model_path}")
-        with open(model_path, "rb") as f:
-            self.model = pickle.load(f)
-
-    def classify(self, content: str) -> List[str]:
-        # Make a prediction using the pipeline
-        # You can, if you like, add additional preprocessing steps here
-        prediction = self.model.predict([content])[0]
-        # Return a list of labels (in this simple case, just one predicted label)
-        return [prediction]
-
-
-# -------------------------------------------------------------------------
-#                                 Main
-# -------------------------------------------------------------------------
-def get_gmail_service() -> build:
-    """
-    Authenticate and return the Gmail API service.
-    """
-    print("==> Authenticating to get Gmail API service")
-    creds = authenticate_gmail()
-    service = build("gmail", "v1", credentials=creds)
-    return service
-
-
-def label(classifier: IEmailClassifier):
-    service = get_gmail_service()
-
-    # Create concrete implementations for our protocols
-    processor = DefaultEmailProcessor(service)
-    labeller = EmailLabeller(processor, classifier)
-    query_builder = QueryFilterBuilder()
-    query_filter = (
-        query_builder.add_filter("-label", "ARCHIVE")
-        .add_filter("-label", LABEL_PROCESSED)
-        .add_filter("-older_than", OLDER_THAN)
-        .add_filter("-in", "sent")
-        .build()
-    )
-    fetcher = EmailFetcher(service, query_filter=query_filter)
-    for email in fetcher.fetch_emails():
-        msg_id = email["id"]
-        labeller.process_message(msg_id)
-
-
-@app.command()
-def llm_label():
-    classifier = DefaultEmailClassifier(model=GPT4ALL_MODEL, valid_labels=LABELS)
-    label(classifier)
-
-
-@app.command()
-def sklearn_label():
-    classifier = SklearnEmailClassifier(model_path="sklearn_email_model.pkl")
-    label(classifier)
 
 
 if __name__ == "__main__":
