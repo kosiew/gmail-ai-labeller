@@ -509,13 +509,8 @@ def label(classifier: IEmailClassifier):
     processor = DefaultEmailProcessor(service)
     labeller = EmailLabeller(processor, classifier)
     query_builder = QueryFilterBuilder()
-    query_filter = (
-        query_builder.add_filter("-label", "ARCHIVE")
-        .add_filter("-label", LABEL_PROCESSED)
-        .add_filter("-older_than", OLDER_THAN)
-        .add_filter("-in", "sent")
-        .build()
-    )
+    query_filter = query_builder.add_filter("-in", "sent").add_filter("-older_than", OLDER_THAN) \
+        .add_filter("-label", "ARCHIVE").build()
     fetcher = EmailFetcher(service, query_filter=query_filter)
     for email in fetcher.fetch_emails():
         msg_id = email["id"]
@@ -580,12 +575,13 @@ def extract_data_from_emails(
     and writes them to a CSV file so you can manually add labels for training.
     """
 
-    print("==> Starting extract_data_from_processed_emails")
+    print("==> Starting extract_data_from_emails")
     service = get_gmail_service()
 
     processor = DefaultEmailProcessor(service)
     query_builder = QueryFilterBuilder()
-    query_builder.add_filter("-in", "sent").add_filter("-older_than", OLDER_THAN)
+    query_builder.add_filter("-in", "sent").add_filter("-older_than", OLDER_THAN) \
+        .add_filter("-label", "ARCHIVE")
     if processed:
         query_builder.add_filter("label", LABEL_PROCESSED)
     else:
