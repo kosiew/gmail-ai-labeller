@@ -409,7 +409,7 @@ class EmailFetcher:
     def __init__(
         self,
         service,
-        tabs: List[str] = ["CATEGORY_UPDATES"],
+        tabs: List[str] = ["CATEGORY_UPDATES", "CATEGORY_PROMOTIONS"],
         query_filter: str = DEFAULT_QUERY_FILTER,
     ):
         self.service = service
