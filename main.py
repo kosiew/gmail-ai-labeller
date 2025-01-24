@@ -536,8 +536,8 @@ def train_sklearn_model_from_csv(
     # We expect columns: From, Subject, Label
     # Drop rows with missing or empty labels
     df = df.dropna(subset=["Label"])
+    df["Label"] = df["Label"].astype(str)
     df = df[df["Label"].str.strip() != ""]
-
     # Combine "From" + "Subject" for training features (simple approach)
     X = df["From"].astype(str) + " " + df["Subject"].astype(str)
     y = df["Label"].astype(str)
@@ -602,14 +602,12 @@ def get_gmail_service() -> build:
     return service
 
 
-@app.command()
-def llm_label():
+def label(classifier: IEmailClassifier):
     service = get_gmail_service()
 
-    # 2. Create concrete implementations for our protocols
+    # Create concrete implementations for our protocols
     processor = DefaultEmailProcessor(service)
-    classifier = DefaultEmailClassifier(model=GPT4ALL_MODEL, valid_labels=LABELS)
-    llm_labeller = EmailLabeller(processor, classifier)
+    labeller = EmailLabeller(processor, classifier)
     query_builder = QueryFilterBuilder()
     query_filter = (
         query_builder.add_filter("-label", "ARCHIVE")
@@ -621,9 +619,18 @@ def llm_label():
     fetcher = EmailFetcher(service, query_filter=query_filter)
     for email in fetcher.fetch_emails():
         msg_id = email["id"]
-        llm_labeller.process_message(msg_id)
+        labeller.process_message(msg_id)
 
+@app.command()
+def llm_label():
+    classifier = DefaultEmailClassifier(model=GPT4ALL_MODEL, valid_labels=LABELS)
+    label(classifier)
 
+@app.command()
+def sklearn_label():
+    classifier = SklearnEmailClassifier(model_path="sklearn_email_model.pkl")
+    label(classifier)
+    
 # def main():
 # EXAMPLE usage:
 # 1. Classify emails with the *existing* DefaultEmailClassifier (LLM-based).
