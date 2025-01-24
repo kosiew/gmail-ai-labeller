@@ -3,12 +3,22 @@ import pickle
 import subprocess
 import base64
 import re
+import csv
 
 from typing import List, Tuple, Protocol, runtime_checkable
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+
+# For training (pandas, sklearn) – make sure you install them:
+#   pip install pandas scikit-learn
+import pandas as pd
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 
 # ----- Constants -----
 GPT4ALL_MODEL = "mistral-7b-instruct-v0"
@@ -17,7 +27,7 @@ LABEL_PROCESSED = "processed"
 OLDER_THAN = "30d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
-MAX_CHARACTERS = 4000  
+MAX_CHARACTERS = 4000
 
 # -------------------------------------------------------------------------
 #                           Authentication Helper
@@ -70,7 +80,6 @@ class IEmailClassifier(Protocol):
     def classify(self, content: str) -> List[str]:
         ...
 
-
 @runtime_checkable
 class IEmailProcessor(Protocol):
     """
@@ -79,17 +88,10 @@ class IEmailProcessor(Protocol):
       - applying labels
     """
     def get_subject_and_content(self, msg_id: str) -> Tuple[str, str]:
-        """
-        Return the (subject, content) of an email.
-        """
         ...
 
     def apply_labels(self, msg_id: str, labels: List[str]) -> None:
-        """
-        Apply given labels to the specified message.
-        """
         ...
-
 
 @runtime_checkable
 class IEmailFetcher(Protocol):
@@ -98,9 +100,6 @@ class IEmailFetcher(Protocol):
     delegating classification & processing to other protocols.
     """
     def fetch_emails(self) -> None:
-        """
-        Main entry point to fetch and process emails.
-        """
         ...
 
 # -------------------------------------------------------------------------
@@ -390,26 +389,184 @@ class DefaultEmailFetcher:
         print(f"==> Applied labels to message ID: {msg_id}")
 
 # -------------------------------------------------------------------------
+#               NEW: Extract Data From Processed Emails
+# -------------------------------------------------------------------------
+
+def extract_data_from_processed_emails(output_csv="extracted_emails.csv"):
+    """
+    Fetches all emails with label 'processed',
+    extracts the 'From' and 'Subject', 
+    and writes them to a CSV file so you can manually add labels for training.
+    """
+
+    print("==> Starting extract_data_from_processed_emails")
+
+    # 1. Authenticate
+    creds = authenticate_gmail()
+    service = build("gmail", "v1", credentials=creds)
+
+    # 2. Collect all messages labeled 'processed'
+    all_messages = []
+    page_token = None
+
+    while True:
+        response = service.users().messages().list(
+            userId="me",
+            labelIds=[LABEL_PROCESSED],
+            pageToken=page_token
+        ).execute()
+
+        messages = response.get("messages", [])
+        if not messages:
+            break
+
+        all_messages.extend(messages)
+        page_token = response.get("nextPageToken")
+        if not page_token:
+            break
+
+    # 3. Write results to CSV
+    with open(output_csv, "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["From", "Subject", "Label"])  # label is empty initially
+
+        for msg in all_messages:
+            msg_id = msg["id"]
+            # Get minimal metadata for "From" and "Subject" only
+            msg_data = service.users().messages().get(
+                userId="me",
+                id=msg_id,
+                format="metadata",
+                metadataHeaders=["From", "Subject"]
+            ).execute()
+
+            headers = msg_data.get("payload", {}).get("headers", [])
+            from_ = next((h["value"] for h in headers if h["name"] == "From"), "")
+            subject = next((h["value"] for h in headers if h["name"] == "Subject"), "")
+
+            writer.writerow([from_, subject, ""])
+
+    print(f"==> Extracted {len(all_messages)} 'processed' emails into {output_csv}")
+
+# -------------------------------------------------------------------------
+#               NEW: Train scikit-learn Model from CSV
+# -------------------------------------------------------------------------
+
+def train_sklearn_model_from_csv(
+    input_csv="extracted_emails.csv",
+    model_path="sklearn_email_model.pkl"
+):
+    """
+    1) Expects a CSV with columns: "From", "Subject", "Label"
+    2) Splits data into train/test
+    3) Trains a TF-IDF + LogisticRegression pipeline
+    4) Prints classification report
+    5) Saves the model pipeline to a .pkl file
+    """
+    print("==> Starting train_sklearn_model_from_csv")
+
+    # Load data
+    df = pd.read_csv(input_csv)
+
+    # We expect columns: From, Subject, Label
+    # Drop rows with missing or empty labels
+    df = df.dropna(subset=["Label"])
+    df = df[df["Label"].str.strip() != ""]
+    
+    # Combine "From" + "Subject" for training features (simple approach)
+    X = df["From"].astype(str) + " " + df["Subject"].astype(str)
+    y = df["Label"].astype(str)
+
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Define pipeline
+    pipeline = Pipeline([
+        ("tfidf", TfidfVectorizer()),
+        ("clf", LogisticRegression())
+    ])
+
+    # Train
+    pipeline.fit(X_train, y_train)
+
+    # Evaluate
+    y_pred = pipeline.predict(X_test)
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred))
+
+    # Save model
+    with open(model_path, "wb") as f:
+        pickle.dump(pipeline, f)
+
+    print(f"==> Trained model saved to '{model_path}'")
+
+# -------------------------------------------------------------------------
+#               NEW: Sklearn-based Email Classifier
+# -------------------------------------------------------------------------
+
+class SklearnEmailClassifier(IEmailClassifier):
+    """
+    A scikit-learn-based classifier that loads a model file (pickle)
+    and predicts labels from email content.
+    """
+
+    def __init__(self, model_path="sklearn_email_model.pkl"):
+        print(f"==> Loading sklearn model from {model_path}")
+        with open(model_path, "rb") as f:
+            self.model = pickle.load(f)
+
+    def classify(self, content: str) -> List[str]:
+        # Make a prediction using the pipeline
+        # You can, if you like, add additional preprocessing steps here
+        prediction = self.model.predict([content])[0]
+        # Return a list of labels (in this simple case, just one predicted label)
+        return [prediction]
+
+# -------------------------------------------------------------------------
 #                                 Main
 # -------------------------------------------------------------------------
 
 def main():
-    # 1. Authenticate to get Gmail API service
-    creds = authenticate_gmail()
-    service = build("gmail", "v1", credentials=creds)
+    # EXAMPLE usage:
+    # 1. Classify emails with the *existing* DefaultEmailClassifier (LLM-based).
+    #    (Uncomment if you want to run your normal classification flow.)
 
-    # 2. Create concrete implementations for our protocols
-    processor = DefaultEmailProcessor(service)
-    classifier = DefaultEmailClassifier(model=GPT4ALL_MODEL, valid_labels=LABELS)
-    fetcher = DefaultEmailFetcher(
-        service=service,
-        processor=processor,
-        classifier=classifier,
-        tabs=["CATEGORY_UPDATES"]
-    )
+    # creds = authenticate_gmail()
+    # service = build("gmail", "v1", credentials=creds)
+    # processor = DefaultEmailProcessor(service)
+    # classifier = DefaultEmailClassifier(model=GPT4ALL_MODEL, valid_labels=LABELS)
+    # fetcher = DefaultEmailFetcher(
+    #     service=service,
+    #     processor=processor,
+    #     classifier=classifier,
+    #     tabs=["CATEGORY_UPDATES"]
+    # )
+    # fetcher.fetch_emails()
 
-    # 3. Use the fetcher (which uses the processor & classifier) to fetch & process emails
-    fetcher.fetch_emails()
+    # 2. Extract data from already processed emails to a CSV
+    # extract_data_from_processed_emails(output_csv="extracted_emails.csv")
+
+    # 3. After labeling the CSV manually, train a scikit-learn model:
+    # train_sklearn_model_from_csv(
+    #     input_csv="extracted_emails.csv", 
+    #     model_path="sklearn_email_model.pkl"
+    # )
+
+    # 4. Now switch to the SklearnEmailClassifier:
+    # creds = authenticate_gmail()
+    # service = build("gmail", "v1", credentials=creds)
+    # processor = DefaultEmailProcessor(service)
+    # sklearn_classifier = SklearnEmailClassifier(model_path="sklearn_email_model.pkl")
+    # fetcher_with_sklearn = DefaultEmailFetcher(
+    #     service=service,
+    #     processor=processor,
+    #     classifier=sklearn_classifier,
+    #     tabs=["CATEGORY_UPDATES"]
+    # )
+    # fetcher_with_sklearn.fetch_emails()
+
+    print("==> Done. Uncomment the desired workflow in main() to use.")
+    
 
 if __name__ == "__main__":
     main()
