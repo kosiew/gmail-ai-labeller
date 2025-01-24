@@ -116,7 +116,7 @@ class EmailData:
 class Folders(Enum):
     PROMOTIONS = "CATEGORY_PROMOTIONS"
     UPDATES = "CATEGORY_UPDATES"
-    NONE = ""
+    TRASH = "TRASH"
 
 # -------------------------------------------------------------------------
 #                          Protocol Definitions
@@ -415,7 +415,7 @@ class EmailFetcher:
     def __init__(
         self,
         service,
-        tabs: List[Folders] = [Folders.UPDATES, Folders.PROMOTIONS, Folders.NONE],
+        tabs: List[Folders] = [Folders.UPDATES, Folders.PROMOTIONS ],
         query_filter: str = DEFAULT_QUERY_FILTER,
     ):
         self.service = service
@@ -599,7 +599,7 @@ def extract_data_from_emails(
 
 @app.command()
 def extract_data_from_trash(
-    folder: Folders = Folders.NONE.value,
+    folder: Folders = Folders.TRASH.value,
     output_csv: str = "extracted_emails.csv",
     processed: bool = False,
 ) -> None:
@@ -645,7 +645,7 @@ def create_trash_email_fetcher():
         "-label", LABEL_PROCESSED
     )
     query_filter = query_builder.build()
-    fetcher = EmailFetcher(service, tabs=[], query_filter=query_filter)
+    fetcher = EmailFetcher(service, tabs=[Folders.TRASH], query_filter=query_filter)
     return processor, fetcher
 
 def write_emails_to_csv(output_csv, processor, fetcher):
