@@ -293,34 +293,40 @@ class DefaultEmailProcessor:
         email_data = self.get_email_data(msg_id)
         return email_data.subject, email_data.full_content
     
-    def get_email_data(self, msg_id: str) -> EmailData:
+    def get_email_data(self, msg_id: str, fields: List[str] = ["from_", "subject", "content"]) -> EmailData:
         """
         Retrieve the EmailData object for a message.
+        Only fetches the specified fields: 'from_', 'subject', 'content'.
         """
+    
         msg_data = (
             self.service.users()
             .messages()
             .get(userId="me", id=msg_id, format="full")
             .execute()
         )
-
-        # Subject
+    
         headers = msg_data.get("payload", {}).get("headers", [])
-        subject = next(
-            (header["value"] for header in headers if header["name"] == "Subject"),
-            "(No Subject)",
-        )
-
-        # Body
-        full_content = self._get_email_content(msg_data)
-
-        # From
-        from_ = next(
-            (header["value"] for header in headers if header["name"] == "From"),
-            "(No Sender)",
-        )
-
-        return EmailData(subject=subject, full_content=full_content, from_=from_)
+        subject = None
+        from_ = None
+        full_content = None
+    
+        if "subject" in fields:
+            subject = next(
+                (header["value"] for header in headers if header["name"] == "Subject"),
+                "(No Subject)",
+            )
+    
+        if "from_" in fields:
+            from_ = next(
+                (header["value"] for header in headers if header["name"] == "From"),
+                "(No Sender)",
+            )
+    
+        if "content" in fields:
+            full_content = self._get_email_content(msg_data)
+    
+        return EmailData(subject=subject, full_content=full_content, from_=from_)    
     
     def _get_email_content(self, msg_data: dict) -> str:
         """
@@ -497,7 +503,7 @@ def extract_data_from_processed_emails(
             # Get minimal metadata for "From" and "Subject" only
             
             # Usage example
-            email_data = processor.get_email_data(msg_id)
+            email_data = processor.get_email_data(msg_id, fields=["from_", "subject"])
             from_, subject = email_data.from_, email_data.subject
     
             if (from_, subject) not in seen:
