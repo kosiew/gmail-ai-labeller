@@ -73,6 +73,7 @@ def authenticate_gmail():
 #                          Protocol Definitions
 # -------------------------------------------------------------------------
 
+
 @runtime_checkable
 class IEmailClassifier(Protocol):
     """
@@ -83,6 +84,7 @@ class IEmailClassifier(Protocol):
     def classify(self, content: str) -> List[str]:
         ...
 
+
 @runtime_checkable
 class IEmailProcessor(Protocol):
     """
@@ -91,10 +93,17 @@ class IEmailProcessor(Protocol):
       - applying labels
     """
     def get_subject_and_content(self, msg_id: str) -> Tuple[str, str]:
+        """
+        Return the (subject, content) of an email.
+        """
         ...
 
     def apply_labels(self, msg_id: str, labels: List[str]) -> None:
+        """
+        Apply given labels to the specified message.
+        """
         ...
+
 
 @runtime_checkable
 class IEmailFetcher(Protocol):
@@ -102,8 +111,15 @@ class IEmailFetcher(Protocol):
     Protocol for fetching emails in pages, 
     delegating classification & processing to other protocols.
     """
-    def fetch_emails(self) -> Iterator[Dict[str, Any]]:        ...
+    def fetch_emails(self) -> None:
+        """
+        Main entry point to fetch and process emails.
+        """
+        ...
 
+# -------------------------------------------------------------------------
+#                Concrete Implementation: EmailClassifier
+# -------------------------------------------------------------------------
 
 def extract_bracketed_content(text: str) -> List[str]:
     """
@@ -171,10 +187,10 @@ class DefaultEmailClassifier:
             return ["etc"]  # fallback on error
 
 # -------------------------------------------------------------------------
-#               Concrete Implementation: EmailClassifier
+#               Concrete Implementation: EmailProcessor
 # -------------------------------------------------------------------------
 
-class DefaultEmailClassifier:
+class DefaultEmailProcessor:
     """
     Default implementation of IEmailProcessor:
       - Caches Gmail labels
@@ -300,46 +316,69 @@ class DefaultEmailClassifier:
 
 class DefaultEmailFetcher:
     """
-    Class for fetching emails via pagination.
+    Default implementation of IEmailFetcher:
+      - Retrieves emails via pagination
+      - Delegates content extraction to an IEmailProcessor
+      - Delegates classification to an IEmailClassifier
+      - Then instructs the processor to apply labels
     """
 
     def __init__(
         self,
         service,
-        tabs: List[str] = None,
-        query_filter: str = f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
+        processor: IEmailProcessor,
+        classifier: IEmailClassifier,
+        tabs: List[str] = None
     ):
         self.service = service
+        self.processor = processor
+        self.classifier = classifier
         self.tabs = tabs or ["CATEGORY_UPDATES"]
-        self.query_filter = query_filter
 
-    def fetch_emails(self) -> Iterator[Dict[str, Any]]:
+    def fetch_emails(self) -> None:
         """
-        Fetch ALL emails from configured tabs.
-        Yields one message at a time.
+        Fetch ALL emails from configured tabs, process them, 
+        applying classification & labels.
         """
         print("==> Starting fetch_emails")
         for tab in self.tabs:
             print(f"==> Fetching emails from tab: {tab}")
-            next_page_token = None 
-            while True:
-                messages, next_page_token = self._fetch_paginated_emails(tab, next_page_token)
-                for msg in messages:
-                    yield msg
-                    
-                if not next_page_token:
-                    break
+            self._fetch_and_process_emails(tab)
         print("✅ Finished fetch_emails successfully!")
+
+    def _fetch_and_process_emails(self, tab: str) -> None:
+        next_page_token = None
+        total_fetched = 0
+        total_processed = 0
+
+        while True:
+            messages, next_page_token = self._fetch_paginated_emails(tab, next_page_token)
+            total_fetched += len(messages)
+
+            if not messages:
+                print(f"==> No messages found in {tab}.")
+                break
+
+            for msg in messages:
+                self._process_message(msg["id"])
+                total_processed += 1
+
+            if not next_page_token:
+                break
+
+        print(f"==> Finished fetching from tab: {tab}. "
+              f"Total fetched: {total_fetched}, total processed: {total_processed}")
 
     def _fetch_paginated_emails(self, tab: str, page_token: str):
         """
         Fetch emails from a specific Gmail tab, 
         excluding archived/processed/sent messages.
         """
+        query = f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
         results = self.service.users().messages().list(
             userId="me",
             labelIds=[tab],
-            q=self.query_filter,
+            q=query,
             pageToken=page_token,
         ).execute()
 
@@ -348,19 +387,7 @@ class DefaultEmailFetcher:
         print(f"==> Fetched {len(messages)} messages from tab: {tab}")
         return messages, next_page_token
 
-
-class EmailProcessor:
-    """
-    Class for processing individual emails:
-      - extracting subject/body
-      - applying labels
-    """
-
-    def __init__(self, processor: IEmailProcessor, classifier: IEmailClassifier):
-        self.processor = processor
-        self.classifier = classifier
-
-    def process_message(self, msg_id: str) -> None:
+    def _process_message(self, msg_id: str) -> None:
         """
         Orchestrate processing a single message:
           - get subject/content (via IEmailProcessor)
