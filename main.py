@@ -578,7 +578,7 @@ def get_gmail_service() -> build:
     return service
 
 
-@typer.command()
+@app.command()
 def llm_label():
     service = get_gmail_service()
 
