@@ -19,6 +19,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
+import typer
+
+app = typer.Typer()
 
 # ----- Constants -----
 GPT4ALL_MODEL = "mistral-7b-instruct-v0"
@@ -392,7 +395,7 @@ class DefaultEmailFetcher:
 #               NEW: Extract Data From Processed Emails
 # -------------------------------------------------------------------------
 
-def extract_data_from_processed_emails(output_csv="extracted_emails.csv"):
+def extract_data_from_processed_emails(output_csv: str = "extracted_emails.csv") -> None:    
     """
     Fetches all emails with label 'processed',
     extracts the 'From' and 'Subject', 
@@ -453,9 +456,9 @@ def extract_data_from_processed_emails(output_csv="extracted_emails.csv"):
 # -------------------------------------------------------------------------
 
 def train_sklearn_model_from_csv(
-    input_csv="extracted_emails.csv",
-    model_path="sklearn_email_model.pkl"
-):
+    input_csv: str = "extracted_emails.csv",
+    model_path: str = "sklearn_email_model.pkl"
+) -> None:
     """
     1) Expects a CSV with columns: "From", "Subject", "Label"
     2) Splits data into train/test
@@ -569,4 +572,4 @@ def main():
     
 
 if __name__ == "__main__":
-    main()
+    app()
