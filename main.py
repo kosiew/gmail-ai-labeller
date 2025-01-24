@@ -554,7 +554,8 @@ def extract_data_from_processed_emails(
     processor = DefaultEmailProcessor(service)
     query_builder = QueryFilterBuilder()
     query_filter = (
-        query_builder.add_filter("label", LABEL_PROCESSED)
+        query_builder
+        .add_filter("-label", LABEL_PROCESSED)
         .add_filter("-in", "sent")
         .build()
     )
