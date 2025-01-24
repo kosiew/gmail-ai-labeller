@@ -5,7 +5,7 @@ import base64
 import re
 import csv
 
-from typing import List, Tuple, Protocol, runtime_checkable, Iterator, Dict, Any
+from typing import List, Tuple, Protocol, runtime_checkable, Iterator, Dict, Any, Optional
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -75,6 +75,16 @@ def authenticate_gmail():
     return creds
 
 
+class EmailData:
+    """
+    Container for email data.
+    """
+    def __init__(self, subject: Optional[str] = None, full_content: Optional[str] = None, from_: Optional[str] = None):
+        self.subject = subject
+        self.full_content = full_content
+        self.from_ = from_
+
+
 # -------------------------------------------------------------------------
 #                          Protocol Definitions
 # -------------------------------------------------------------------------
@@ -99,15 +109,15 @@ class IEmailProcessor(Protocol):
       - applying labels
     """
 
-    def get_subject_and_content(self, msg_id: str) -> Tuple[str, str]:
-        """
-        Return the (subject, content) of an email.
-        """
-        ...
-
     def apply_labels(self, msg_id: str, labels: List[str]) -> None:
         """
         Apply given labels to the specified message.
+        """
+        ...
+
+    def get_email_data(self, msg_id: str) -> EmailData:
+        """
+        Return the EmailData object of an email.
         """
         ...
 
@@ -280,6 +290,13 @@ class DefaultEmailProcessor:
         """
         Retrieve the (subject, content) for a message.
         """
+        email_data = self.get_email_data(msg_id)
+        return email_data.subject, email_data.full_content
+    
+    def get_email_data(self, msg_id: str) -> EmailData:
+        """
+        Retrieve the EmailData object for a message.
+        """
         msg_data = (
             self.service.users()
             .messages()
@@ -296,8 +313,15 @@ class DefaultEmailProcessor:
 
         # Body
         full_content = self._get_email_content(msg_data)
-        return subject, full_content
 
+        # From
+        from_ = next(
+            (header["value"] for header in headers if header["name"] == "From"),
+            "(No Sender)",
+        )
+
+        return EmailData(subject=subject, full_content=full_content, from_=from_)
+    
     def _get_email_content(self, msg_data: dict) -> str:
         """
         Extract text/plain parts from message payload. Fallback to snippet if none found.
@@ -451,54 +475,34 @@ def extract_data_from_processed_emails(
     print("==> Starting extract_data_from_processed_emails")
     service = get_gmail_service()
 
-    fetcher = EmailFetcher(service)
-    for email in fetcher.fetch_emails():
-        msg_id = email["id"]
-
-    while True:
-        response = (
-            service.users()
-            .messages()
-            .list(userId="me", labelIds=[LABEL_PROCESSED], pageToken=page_token)
-            .execute()
-        )
-
-        messages = response.get("messages", [])
-        if not messages:
-            break
-
-        all_messages.extend(messages)
-        page_token = response.get("nextPageToken")
-        if not page_token:
-            break
+    processor = DefaultEmailProcessor(service)
+    query_builder = QueryFilterBuilder()
+    query_filter = (
+        query_builder
+            .add_filter("label", LABEL_PROCESSED)
+            .add_filter("-in", "sent")
+            .build()
+    )
+    fetcher = EmailFetcher(service, query_filter=query_filter)
 
     # 3. Write results to CSV
     with open(output_csv, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["From", "Subject", "Label"])  # label is empty initially
 
-        for msg in all_messages:
+        counter = 0
+        for msg in fetcher.fetch_emails():
             msg_id = msg["id"]
             # Get minimal metadata for "From" and "Subject" only
-            msg_data = (
-                service.users()
-                .messages()
-                .get(
-                    userId="me",
-                    id=msg_id,
-                    format="metadata",
-                    metadataHeaders=["From", "Subject"],
-                )
-                .execute()
-            )
-
-            headers = msg_data.get("payload", {}).get("headers", [])
-            from_ = next((h["value"] for h in headers if h["name"] == "From"), "")
-            subject = next((h["value"] for h in headers if h["name"] == "Subject"), "")
+            
+            # Usage example
+            email_data = processor.get_email_data(msg_id)
+            from_, subject = email_data.from_, email_data.subject
 
             writer.writerow([from_, subject, ""])
+            counter += 1
 
-    print(f"==> Extracted {len(all_messages)} 'processed' emails into {output_csv}")
+    print(f"==> Extracted {counter} 'processed' emails into {output_csv}")
 
 
 # -------------------------------------------------------------------------
