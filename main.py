@@ -524,7 +524,37 @@ def label(classifier: IEmailClassifier):
 # -------------------------------------------------------------------------
 #                          Typer Commands
 # -------------------------------------------------------------------------
+@app.command()
+def append_to_extracted_emails(input_csv: str = "extracted_emails.csv", output_csv: str = "_extracted_emails.csv") -> None:
+    """
+    Append rows from input_csv to output_csv.
+    If output_csv is blank, include the header line (From, Subject, Label).
+    Otherwise, only append the data rows.
+    """
+    print(f"==> Appending rows from {input_csv} to {output_csv}")
 
+    # Read input CSV
+    with open(input_csv, "r", newline="", encoding="utf-8") as infile:
+        reader = csv.reader(infile)
+        rows = list(reader)
+
+    # Check if output CSV is blank
+    try:
+        with open(output_csv, "r", newline="", encoding="utf-8") as outfile:
+            existing_rows = list(csv.reader(outfile))
+    except FileNotFoundError:
+        existing_rows = []
+
+    # Append rows to output CSV
+    with open(output_csv, "a", newline="", encoding="utf-8") as outfile:
+        writer = csv.writer(outfile)
+        if not existing_rows:
+            # Include header if output CSV is blank
+            writer.writerow(["From", "Subject", "Label"])
+        # Append data rows
+        writer.writerows(rows[1:])  # Skip header row from input CSV
+
+    print(f"==> Appended rows to {output_csv}")
 
 @app.command()
 def llm_label():
@@ -586,7 +616,7 @@ def extract_data_from_processed_emails(
 
 @app.command()
 def train_sklearn_model_from_csv(
-    input_csv: str = "extracted_emails.csv", model_path: str = "sklearn_email_model.pkl"
+    input_csv: str = "_extracted_emails.csv", model_path: str = "sklearn_email_model.pkl"
 ) -> None:
     """
     1) Expects a CSV with columns: "From", "Subject", "Label"
