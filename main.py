@@ -489,7 +489,8 @@ def extract_data_from_processed_emails(
     with open(output_csv, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["From", "Subject", "Label"])  # label is empty initially
-
+    
+        seen = set()
         counter = 0
         for msg in fetcher.fetch_emails():
             msg_id = msg["id"]
@@ -498,9 +499,11 @@ def extract_data_from_processed_emails(
             # Usage example
             email_data = processor.get_email_data(msg_id)
             from_, subject = email_data.from_, email_data.subject
-
-            writer.writerow([from_, subject, ""])
-            counter += 1
+    
+            if (from_, subject) not in seen:
+                writer.writerow([from_, subject, ""])
+                seen.add((from_, subject))
+                counter += 1
 
     print(f"==> Extracted {counter} 'processed' emails into {output_csv}")
 
