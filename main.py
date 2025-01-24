@@ -35,7 +35,7 @@ app = typer.Typer()
 GPT4ALL_MODEL = "mistral-7b-instruct-v0"
 LABELS = ["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED = "processed"
-OLDER_THAN = "30d"
+OLDER_THAN = "60d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
 MAX_CHARACTERS = 4000
@@ -81,6 +81,7 @@ def authenticate_gmail():
 
     print("==> Finished authenticate_gmail")
     return creds
+
 
 def get_gmail_service() -> build:
     """
@@ -196,6 +197,7 @@ class SklearnEmailClassifier(IEmailClassifier):
         prediction = self.model.predict([content])[0]
         # Return a list of labels (in this simple case, just one predicted label)
         return [prediction]
+
 
 class DefaultEmailClassifier:
     """
@@ -471,7 +473,6 @@ class QueryFilterBuilder:
         return " ".join(self.filters)
 
 
-
 class EmailLabeller:
     """
     Class for processing individual emails:
@@ -519,9 +520,11 @@ def label(classifier: IEmailClassifier):
         msg_id = email["id"]
         labeller.process_message(msg_id)
 
+
 # -------------------------------------------------------------------------
 #                          Typer Commands
 # -------------------------------------------------------------------------
+
 
 @app.command()
 def llm_label():
@@ -626,7 +629,6 @@ def train_sklearn_model_from_csv(
         pickle.dump(pipeline, f)
 
     print(f"==> Trained model saved to '{model_path}'")
-
 
 
 if __name__ == "__main__":
