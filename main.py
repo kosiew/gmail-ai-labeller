@@ -422,6 +422,7 @@ class EmailFetcher:
         Yields one message at a time.
         """
         print("==> Starting fetch_emails")
+        print(f"==> Query filter: {self.query_filter}")
         for tab in self.tabs:
             print(f"==> Fetching emails from tab: {tab}")
             next_page_token = None
@@ -569,11 +570,12 @@ def sklearn_label():
 
 
 @app.command()
-def extract_data_from_processed_emails(
+def extract_data_from_emails(
     output_csv: str = "extracted_emails.csv",
+    processed: bool = False,
 ) -> None:
     """
-    Fetches all emails with label 'processed',
+    Fetches all emails with or without the 'processed' label,
     extracts the 'From' and 'Subject',
     and writes them to a CSV file so you can manually add labels for training.
     """
@@ -583,12 +585,13 @@ def extract_data_from_processed_emails(
 
     processor = DefaultEmailProcessor(service)
     query_builder = QueryFilterBuilder()
-    query_filter = (
-        query_builder
-        .add_filter("-label", LABEL_PROCESSED)
-        .add_filter("-in", "sent")
-        .build()
-    )
+    query_builder.add_filter("-in", "sent").add_filter("-older_than", OLDER_THAN)
+    if processed:
+        query_builder.add_filter("label", LABEL_PROCESSED)
+    else:
+        query_builder.add_filter("-label", LABEL_PROCESSED)
+        
+    query_filter = query_builder.build()
     fetcher = EmailFetcher(service, query_filter=query_filter)
 
     # 3. Write results to CSV
@@ -609,9 +612,10 @@ def extract_data_from_processed_emails(
             if (from_, subject) not in seen:
                 writer.writerow([from_, subject, ""])
                 seen.add((from_, subject))
+                print(f"==> Extracted: {from_} - {subject}")
                 counter += 1
 
-    print(f"==> Extracted {counter} 'processed' emails into {output_csv}")
+    print(f"==> Extracted {counter} emails into {output_csv}")
 
 
 @app.command()
