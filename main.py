@@ -4,6 +4,7 @@ import subprocess
 import base64
 import re
 import csv
+from enum import Enum
 
 from typing import (
     List,
@@ -35,7 +36,7 @@ app = typer.Typer()
 GPT4ALL_MODEL = "mistral-7b-instruct-v0"
 LABELS = ["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED = "processed"
-OLDER_THAN = "30d"
+OLDER_THAN = "130d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
 MAX_CHARACTERS = 4000
@@ -111,6 +112,10 @@ class EmailData:
         self.full_content = full_content
         self.from_ = from_
 
+
+class Folders(Enum):
+    PROMOTIONS = "CATEGORY_PROMOTIONS"
+    UPDATES = "CATEGORY_UPDATES"
 
 # -------------------------------------------------------------------------
 #                          Protocol Definitions
@@ -409,7 +414,7 @@ class EmailFetcher:
     def __init__(
         self,
         service,
-        tabs: List[str] = ["CATEGORY_UPDATES", "CATEGORY_PROMOTIONS"],
+        tabs: List[Folders] = [Folders.UPDATES, Folders.PROMOTIONS],
         query_filter: str = DEFAULT_QUERY_FILTER,
     ):
         self.service = service
@@ -424,11 +429,11 @@ class EmailFetcher:
         print("==> Starting fetch_emails")
         print(f"==> Query filter: {self.query_filter}")
         for tab in self.tabs:
-            print(f"==> Fetching emails from tab: {tab}")
+            print(f"==> Fetching emails from tab: {tab.value}")
             next_page_token = None
             while True:
                 messages, next_page_token = self._fetch_paginated_emails(
-                    tab, next_page_token
+                    tab.value, next_page_token
                 )
                 for msg in messages:
                     yield msg
@@ -502,6 +507,8 @@ class EmailLabeller:
         print(f"==> Applied labels to message ID: {msg_id}")
 
 
+
+
 def label(classifier: IEmailClassifier):
     service = get_gmail_service()
 
@@ -573,6 +580,7 @@ def sklearn_label():
 
 @app.command()
 def extract_data_from_emails(
+    folder: Folders = Folders.UPDATES.value,
     output_csv: str = "extracted_emails.csv",
     processed: bool = False,
 ) -> None:
@@ -596,7 +604,7 @@ def extract_data_from_emails(
         query_builder.add_filter("-label", LABEL_PROCESSED)
 
     query_filter = query_builder.build()
-    fetcher = EmailFetcher(service, query_filter=query_filter)
+    fetcher = EmailFetcher(service, tabs=[folder], query_filter=query_filter)
 
     # 3. Write results to CSV
     with open(output_csv, "w", newline="", encoding="utf-8") as csvfile:
