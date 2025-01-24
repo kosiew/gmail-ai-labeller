@@ -36,7 +36,7 @@ app = typer.Typer()
 GPT4ALL_MODEL = "mistral-7b-instruct-v0"
 LABELS = ["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED = "processed"
-OLDER_THAN = "130d"
+OLDER_THAN = "30d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
 MAX_CHARACTERS = 4000
@@ -116,6 +116,7 @@ class EmailData:
 class Folders(Enum):
     PROMOTIONS = "CATEGORY_PROMOTIONS"
     UPDATES = "CATEGORY_UPDATES"
+    NONE = ""
 
 # -------------------------------------------------------------------------
 #                          Protocol Definitions
@@ -414,7 +415,7 @@ class EmailFetcher:
     def __init__(
         self,
         service,
-        tabs: List[Folders] = [Folders.UPDATES, Folders.PROMOTIONS],
+        tabs: List[Folders] = [Folders.UPDATES, Folders.PROMOTIONS, Folders.NONE],
         query_filter: str = DEFAULT_QUERY_FILTER,
     ):
         self.service = service
@@ -591,6 +592,30 @@ def extract_data_from_emails(
     """
 
     print("==> Starting extract_data_from_emails")
+    processor, fetcher = create_email_fetcher(folder, processed)
+
+    # 3. Write results to CSV
+    write_emails_to_csv(output_csv, processor, fetcher)
+
+@app.command()
+def extract_data_from_trash(
+    folder: Folders = Folders.NONE.value,
+    output_csv: str = "extracted_emails.csv",
+    processed: bool = False,
+) -> None:
+    """
+    Fetches all emails with or without the 'processed' label,
+    extracts the 'From' and 'Subject',
+    and writes them to a CSV file so you can manually add labels for training.
+    """
+
+    print("==> Starting extract_data_from_emails")
+    processor, fetcher = create_trash_email_fetcher()
+
+    # 3. Write results to CSV
+    write_emails_to_csv(output_csv, processor, fetcher)
+
+def create_email_fetcher(folder, processed):
     service = get_gmail_service()
 
     processor = DefaultEmailProcessor(service)
@@ -605,8 +630,25 @@ def extract_data_from_emails(
 
     query_filter = query_builder.build()
     fetcher = EmailFetcher(service, tabs=[folder], query_filter=query_filter)
+    return processor,fetcher
 
-    # 3. Write results to CSV
+def create_trash_email_fetcher():
+    service = get_gmail_service()
+
+    processor = DefaultEmailProcessor(service)
+    query_builder = QueryFilterBuilder()
+    query_builder.add_filter(
+        "in", "trash"
+    ).add_filter(
+        "-older_than", OLDER_THAN
+    ).add_filter(
+        "-label", LABEL_PROCESSED
+    )
+    query_filter = query_builder.build()
+    fetcher = EmailFetcher(service, tabs=[], query_filter=query_filter)
+    return processor, fetcher
+
+def write_emails_to_csv(output_csv, processor, fetcher):
     with open(output_csv, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["From", "Subject", "Label"])  # label is empty initially
