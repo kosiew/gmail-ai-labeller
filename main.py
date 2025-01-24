@@ -5,7 +5,7 @@ import base64
 import re
 import csv
 
-from typing import List, Tuple, Protocol, runtime_checkable
+from typing import List, Tuple, Protocol, runtime_checkable, Iterator, Dict, Any
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -102,12 +102,8 @@ class IEmailFetcher(Protocol):
     Protocol for fetching emails in pages, 
     delegating classification & processing to other protocols.
     """
-    def fetch_emails(self) -> None:
-        ...
+    def fetch_emails(self) -> Iterator[Dict[str, Any]]:        ...
 
-# -------------------------------------------------------------------------
-#                Concrete Implementation: EmailClassifier
-# -------------------------------------------------------------------------
 
 def extract_bracketed_content(text: str) -> List[str]:
     """
@@ -175,10 +171,10 @@ class DefaultEmailClassifier:
             return ["etc"]  # fallback on error
 
 # -------------------------------------------------------------------------
-#               Concrete Implementation: EmailProcessor
+#               Concrete Implementation: EmailClassifier
 # -------------------------------------------------------------------------
 
-class DefaultEmailProcessor:
+class DefaultEmailClassifier:
     """
     Default implementation of IEmailProcessor:
       - Caches Gmail labels
@@ -304,69 +300,46 @@ class DefaultEmailProcessor:
 
 class DefaultEmailFetcher:
     """
-    Default implementation of IEmailFetcher:
-      - Retrieves emails via pagination
-      - Delegates content extraction to an IEmailProcessor
-      - Delegates classification to an IEmailClassifier
-      - Then instructs the processor to apply labels
+    Class for fetching emails via pagination.
     """
 
     def __init__(
         self,
         service,
-        processor: IEmailProcessor,
-        classifier: IEmailClassifier,
-        tabs: List[str] = None
+        tabs: List[str] = None,
+        query_filter: str = f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
     ):
         self.service = service
-        self.processor = processor
-        self.classifier = classifier
         self.tabs = tabs or ["CATEGORY_UPDATES"]
+        self.query_filter = query_filter
 
-    def fetch_emails(self) -> None:
+    def fetch_emails(self) -> Iterator[Dict[str, Any]]:
         """
-        Fetch ALL emails from configured tabs, process them, 
-        applying classification & labels.
+        Fetch ALL emails from configured tabs.
+        Yields one message at a time.
         """
         print("==> Starting fetch_emails")
         for tab in self.tabs:
             print(f"==> Fetching emails from tab: {tab}")
-            self._fetch_and_process_emails(tab)
+            next_page_token = None 
+            while True:
+                messages, next_page_token = self._fetch_paginated_emails(tab, next_page_token)
+                for msg in messages:
+                    yield msg
+                    
+                if not next_page_token:
+                    break
         print("✅ Finished fetch_emails successfully!")
-
-    def _fetch_and_process_emails(self, tab: str) -> None:
-        next_page_token = None
-        total_fetched = 0
-        total_processed = 0
-
-        while True:
-            messages, next_page_token = self._fetch_paginated_emails(tab, next_page_token)
-            total_fetched += len(messages)
-
-            if not messages:
-                print(f"==> No messages found in {tab}.")
-                break
-
-            for msg in messages:
-                self._process_message(msg["id"])
-                total_processed += 1
-
-            if not next_page_token:
-                break
-
-        print(f"==> Finished fetching from tab: {tab}. "
-              f"Total fetched: {total_fetched}, total processed: {total_processed}")
 
     def _fetch_paginated_emails(self, tab: str, page_token: str):
         """
         Fetch emails from a specific Gmail tab, 
         excluding archived/processed/sent messages.
         """
-        query = f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
         results = self.service.users().messages().list(
             userId="me",
             labelIds=[tab],
-            q=query,
+            q=self.query_filter,
             pageToken=page_token,
         ).execute()
 
@@ -375,7 +348,19 @@ class DefaultEmailFetcher:
         print(f"==> Fetched {len(messages)} messages from tab: {tab}")
         return messages, next_page_token
 
-    def _process_message(self, msg_id: str) -> None:
+
+class EmailProcessor:
+    """
+    Class for processing individual emails:
+      - extracting subject/body
+      - applying labels
+    """
+
+    def __init__(self, processor: IEmailProcessor, classifier: IEmailClassifier):
+        self.processor = processor
+        self.classifier = classifier
+
+    def process_message(self, msg_id: str) -> None:
         """
         Orchestrate processing a single message:
           - get subject/content (via IEmailProcessor)
@@ -526,11 +511,37 @@ class SklearnEmailClassifier(IEmailClassifier):
         # Return a list of labels (in this simple case, just one predicted label)
         return [prediction]
 
+
 # -------------------------------------------------------------------------
 #                                 Main
 # -------------------------------------------------------------------------
+def get_gmail_service() -> build:
+    """
+    Authenticate and return the Gmail API service.
+    """
+    print("==> Authenticating to get Gmail API service")
+    creds = authenticate_gmail()
+    service = build("gmail", "v1", credentials=creds)
+    return service
 
-def main():
+@typer.command()
+def llm_label():
+    service = get_gmail_service()
+
+    # 2. Create concrete implementations for our protocols
+    processor = DefaultEmailClassifier(service)
+    classifier = DefaultEmailClassifier(model=GPT4ALL_MODEL, valid_labels=LABELS)
+    fetcher = DefaultEmailFetcher(
+        service=service,
+        processor=processor,
+        classifier=classifier,
+        tabs=["CATEGORY_UPDATES"]
+    )
+
+    # 3. Use the fetcher (which uses the processor & classifier) to fetch & process emails
+    fetcher.fetch_emails()
+    
+# def main():
     # EXAMPLE usage:
     # 1. Classify emails with the *existing* DefaultEmailClassifier (LLM-based).
     #    (Uncomment if you want to run your normal classification flow.)
@@ -569,7 +580,7 @@ def main():
     # )
     # fetcher_with_sklearn.fetch_emails()
 
-    print("==> Done. Uncomment the desired workflow in main() to use.")
+    # print("==> Done. Uncomment the desired workflow in main() to use.")
     
 
 if __name__ == "__main__":
