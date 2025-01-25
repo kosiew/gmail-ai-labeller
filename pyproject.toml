@@ -15,5 +15,4 @@ dependencies = [
     "scipy>=1.15.1",
     "typer>=0.15.1",
     "pandas>=2.2.3",
-    "nltk>=3.9.1",
 ]

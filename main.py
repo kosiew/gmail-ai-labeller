@@ -5,6 +5,7 @@ import base64
 import re
 import csv
 from enum import Enum
+
 from typing import (
     List,
     Tuple,
@@ -22,15 +23,12 @@ from googleapiclient.discovery import build
 # For training (pandas, sklearn) – make sure you install them:
 #   pip install pandas scikit-learn
 import pandas as pd
-from sklearn.pipeline import Pipeline, FeatureUnion
+from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
-from sklearn.base import BaseEstimator, TransformerMixin
 import typer
-from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
-from nltk.stem import WordNetLemmatizer
 
 app = typer.Typer()
 
@@ -674,27 +672,6 @@ def write_emails_to_csv(output_csv, processor, fetcher):
     print(f"==> Extracted {counter} emails into {output_csv}")
 
 
-# Custom transformer to extract email domain
-class EmailDomainExtractor(BaseEstimator, TransformerMixin):
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        return [self.extract_domain(email) for email in X]
-
-    @staticmethod
-    def extract_domain(email):
-        match = re.search(r'@([\w.-]+)', email)
-        return match.group(1) if match else "unknown"
-
-lemmatizer = WordNetLemmatizer()
-
-def clean_text(text):
-    text = text.lower()
-    text = re.sub(r'\W+', ' ', text)  # Remove special characters
-    text = ' '.join(lemmatizer.lemmatize(word) for word in text.split() if word not in ENGLISH_STOP_WORDS)
-    return text
-
 @app.command()
 def train_sklearn_model_from_csv(
     input_csv: str = "_extracted_emails.csv",
@@ -702,30 +679,23 @@ def train_sklearn_model_from_csv(
 ) -> None:
     """
     1) Expects a CSV with columns: "From", "Subject", "Label"
-    2) Extracts sender domain as a feature
-    3) Splits data into train/test
-    4) Trains a TF-IDF +  MultiNomialNB pipeline
-    5) Prints classification report
-    6) Saves the model pipeline to a .pkl file
+    2) Splits data into train/test
+    3) Trains a TF-IDF + LogisticRegression pipeline
+    4) Prints classification report
+    5) Saves the model pipeline to a .pkl file
     """
     print("==> Starting train_sklearn_model_from_csv")
 
     # Load data
     df = pd.read_csv(input_csv)
 
+    # We expect columns: From, Subject, Label
     # Drop rows with missing or empty labels
     df = df.dropna(subset=["Label"])
     df["Label"] = df["Label"].astype(str)
     df = df[df["Label"].str.strip() != ""]
-
-    # Extract domain from "From" field
-    df["Domain"] = df["From"].astype(str).apply(EmailDomainExtractor.extract_domain)
-
-    # Clean the "Subject" field
-    df["Cleaned_Subject"] = df["Subject"].astype(str).apply(clean_text)
-
-    # Combine "From", "Cleaned_Subject", and "Domain" for training
-    X = df[["From", "Cleaned_Subject", "Domain"]]
+    # Combine "From" + "Subject" for training features (simple approach)
+    X = df["From"].astype(str) + " " + df["Subject"].astype(str)
     y = df["Label"].astype(str)
 
     # Split data
@@ -733,24 +703,14 @@ def train_sklearn_model_from_csv(
         X, y, test_size=0.2, random_state=42
     )
 
-    # Define pipeline with FeatureUnion, ensuring all text-based features are vectorized
-    pipeline = Pipeline([
-        ("features", FeatureUnion([
-            ("tfidf_from", TfidfVectorizer()),  # TF-IDF for From field
-            ("tfidf_subject", TfidfVectorizer()),  # TF-IDF for Cleaned_Subject field
-            ("tfidf_domain", Pipeline([
-                ("extract_domain", EmailDomainExtractor()),  # Extract email domains
-                ("vectorizer", TfidfVectorizer())  # Convert domains to TF-IDF features
-            ]))
-        ])),
-        ("clf", MultinomialNB())
-    ])
+    # Define pipeline
+    pipeline = Pipeline([("tfidf", TfidfVectorizer()), ("clf", LogisticRegression())])
 
     # Train
-    pipeline.fit(X_train.apply(lambda row: " ".join(row), axis=1), y_train)
+    pipeline.fit(X_train, y_train)
 
     # Evaluate
-    y_pred = pipeline.predict(X_test.apply(lambda row: " ".join(row), axis=1))
+    y_pred = pipeline.predict(X_test)
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred))
 
@@ -759,8 +719,6 @@ def train_sklearn_model_from_csv(
         pickle.dump(pipeline, f)
 
     print(f"==> Trained model saved to '{model_path}'")
-
-
 
 
 if __name__ == "__main__":
