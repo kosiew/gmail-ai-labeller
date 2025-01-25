@@ -31,7 +31,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 import typer
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from nltk.stem import WordNetLemmatizer
-from imblearn.over_sampling import SMOTE
 
 app = typer.Typer()
 
@@ -705,10 +704,9 @@ def train_sklearn_model_from_csv(
     1) Expects a CSV with columns: "From", "Subject", "Label"
     2) Extracts sender domain as a feature
     3) Splits data into train/test
-    4) Applies SMOTE to handle class imbalance
-    5) Trains a TF-IDF +  MultiNomialNB pipeline
-    6) Prints classification report
-    7) Saves the model pipeline to a .pkl file
+    4) Trains a TF-IDF +  MultiNomialNB pipeline
+    5) Prints classification report
+    6) Saves the model pipeline to a .pkl file
     """
     print("==> Starting train_sklearn_model_from_csv")
 
@@ -750,10 +748,6 @@ def train_sklearn_model_from_csv(
     from scipy.sparse import hstack
     X_train_vectorized = hstack([X_train_from, X_train_subject, X_train_domain])
 
-    # Apply SMOTE to handle class imbalance
-    smote = SMOTE(random_state=42)
-    X_train_resampled, y_train_resampled = smote.fit_resample(X_train_vectorized, y_train)
-
     # Transform the test data
     X_test_from = vectorizer_from.transform(X_test["From"])
     X_test_subject = vectorizer_subject.transform(X_test["Cleaned_Subject"])
@@ -762,7 +756,7 @@ def train_sklearn_model_from_csv(
 
     # Define and train the model
     model = MultinomialNB()
-    model.fit(X_train_resampled, y_train_resampled)
+    model.fit(X_train_vectorized, y_train)
 
     # Evaluate
     y_pred = model.predict(X_test_vectorized)

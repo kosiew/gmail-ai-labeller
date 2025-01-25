@@ -16,5 +16,4 @@ dependencies = [
     "typer>=0.15.1",
     "pandas>=2.2.3",
     "nltk>=3.9.1",
-    "imbalanced-learn>=0.13.0",
 ]
