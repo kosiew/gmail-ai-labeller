@@ -29,7 +29,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.base import BaseEstimator, TransformerMixin
 import typer
-
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+from nltk.stem import WordNetLemmatizer
 
 app = typer.Typer()
 
@@ -686,6 +687,14 @@ class EmailDomainExtractor(BaseEstimator, TransformerMixin):
         match = re.search(r'@([\w.-]+)', email)
         return match.group(1) if match else "unknown"
 
+lemmatizer = WordNetLemmatizer()
+
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'\W+', ' ', text)  # Remove special characters
+    text = ' '.join(lemmatizer.lemmatize(word) for word in text.split() if word not in ENGLISH_STOP_WORDS)
+    return text
+
 @app.command()
 def train_sklearn_model_from_csv(
     input_csv: str = "_extracted_emails.csv",
@@ -712,8 +721,11 @@ def train_sklearn_model_from_csv(
     # Extract domain from "From" field
     df["Domain"] = df["From"].astype(str).apply(EmailDomainExtractor.extract_domain)
 
-    # Combine "From", "Subject", and "Domain" for training
-    X = df[["From", "Subject", "Domain"]]
+    # Clean the "Subject" field
+    df["Cleaned_Subject"] = df["Subject"].astype(str).apply(clean_text)
+
+    # Combine "From", "Cleaned_Subject", and "Domain" for training
+    X = df[["From", "Cleaned_Subject", "Domain"]]
     y = df["Label"].astype(str)
 
     # Split data
@@ -725,7 +737,7 @@ def train_sklearn_model_from_csv(
     pipeline = Pipeline([
         ("features", FeatureUnion([
             ("tfidf_from", TfidfVectorizer()),  # TF-IDF for From field
-            ("tfidf_subject", TfidfVectorizer()),  # TF-IDF for Subject field
+            ("tfidf_subject", TfidfVectorizer()),  # TF-IDF for Cleaned_Subject field
             ("tfidf_domain", Pipeline([
                 ("extract_domain", EmailDomainExtractor()),  # Extract email domains
                 ("vectorizer", TfidfVectorizer())  # Convert domains to TF-IDF features
@@ -733,7 +745,6 @@ def train_sklearn_model_from_csv(
         ])),
         ("clf", MultinomialNB())
     ])
-
 
     # Train
     pipeline.fit(X_train.apply(lambda row: " ".join(row), axis=1), y_train)
