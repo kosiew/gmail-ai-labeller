@@ -685,7 +685,7 @@ class EmailDomainExtractor(BaseEstimator, TransformerMixin):
     @staticmethod
     def extract_domain(email):
         match = re.search(r'@([\w.-]+)', email)
-        return match.group(1) if match else "unknown"
+        return match.group(1).lower() if match else "unknown"
 
 lemmatizer = WordNetLemmatizer()
 
@@ -721,12 +721,11 @@ def train_sklearn_model_from_csv(
     # Extract domain from "From" field
     df["Domain"] = df["From"].astype(str).apply(EmailDomainExtractor.extract_domain)
 
-    # Clean the "Subject" and "Domain" fields
+    # Clean the "Subject" field
     df["Cleaned_Subject"] = df["Subject"].astype(str).apply(clean_text)
-    df["Cleaned_Domain"] = df["Domain"].astype(str).apply(clean_text)
 
-    # Combine "From", "Cleaned_Subject", and "Cleaned_Domain" for training
-    X = df[["From", "Cleaned_Subject", "Cleaned_Domain"]]
+    # Combine "From", "Cleaned_Subject", and "Domain" for training
+    X = df[["From", "Cleaned_Subject", "Domain"]]
     y = df["Label"].astype(str)
 
     # Split data using stratified sampling
@@ -742,7 +741,7 @@ def train_sklearn_model_from_csv(
     # Fit and transform the training data
     X_train_from = vectorizer_from.fit_transform(X_train["From"])
     X_train_subject = vectorizer_subject.fit_transform(X_train["Cleaned_Subject"])
-    X_train_domain = vectorizer_domain.fit_transform(X_train["Cleaned_Domain"])
+    X_train_domain = vectorizer_domain.fit_transform(X_train["Domain"])
 
     # Concatenate the vectorized features
     from scipy.sparse import hstack
@@ -751,7 +750,7 @@ def train_sklearn_model_from_csv(
     # Transform the test data
     X_test_from = vectorizer_from.transform(X_test["From"])
     X_test_subject = vectorizer_subject.transform(X_test["Cleaned_Subject"])
-    X_test_domain = vectorizer_domain.transform(X_test["Cleaned_Domain"])
+    X_test_domain = vectorizer_domain.transform(X_test["Domain"])
     X_test_vectorized = hstack([X_test_from, X_test_subject, X_test_domain])
 
     # Define and train the model
