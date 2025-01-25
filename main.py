@@ -696,6 +696,16 @@ def clean_text(text):
     text = ' '.join(lemmatizer.lemmatize(word) for word in text.split() if word not in ENGLISH_STOP_WORDS)
     return text
 
+class ColumnExtractor(BaseEstimator, TransformerMixin):
+    def __init__(self, column):
+        self.column = column
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        return X[self.column]
+
 @app.command()
 def train_sklearn_model_from_csv(
     input_csv: str = "_extracted_emails.csv",
@@ -723,11 +733,12 @@ def train_sklearn_model_from_csv(
     # Extract domain from "From" field
     df["Domain"] = df["From"].astype(str).apply(EmailDomainExtractor.extract_domain)
 
-    # Clean the "Subject" field
+    # Clean the "Subject" and "Domain" fields
     df["Cleaned_Subject"] = df["Subject"].astype(str).apply(clean_text)
+    df["Cleaned_Domain"] = df["Domain"].astype(str).apply(clean_text)
 
-    # Combine "From", "Cleaned_Subject", and "Domain" for training
-    X = df[["From", "Cleaned_Subject", "Domain"]]
+    # Combine "From", "Cleaned_Subject", and "Cleaned_Domain" for training
+    X = df[["From", "Cleaned_Subject", "Cleaned_Domain"]]
     y = df["Label"].astype(str)
 
     # Split data using stratified sampling
@@ -742,21 +753,27 @@ def train_sklearn_model_from_csv(
     # Define pipeline with FeatureUnion, ensuring all text-based features are vectorized
     pipeline = Pipeline([
         ("features", FeatureUnion([
-            ("tfidf_from", TfidfVectorizer()),  # TF-IDF for From field
-            ("tfidf_subject", TfidfVectorizer()),  # TF-IDF for Cleaned_Subject field
+            ("tfidf_from", Pipeline([
+                ("extract", ColumnExtractor("From")),
+                ("vectorizer", TfidfVectorizer())
+            ])),
+            ("tfidf_subject", Pipeline([
+                ("extract", ColumnExtractor("Cleaned_Subject")),
+                ("vectorizer", TfidfVectorizer())
+            ])),
             ("tfidf_domain", Pipeline([
-                ("extract_domain", EmailDomainExtractor()),  # Extract email domains
-                ("vectorizer", TfidfVectorizer())  # Convert domains to TF-IDF features
+                ("extract", ColumnExtractor("Cleaned_Domain")),
+                ("vectorizer", TfidfVectorizer())
             ]))
         ])),
         ("clf", MultinomialNB())
     ])
 
     # Train
-    pipeline.fit(X_train_resampled.apply(lambda row: " ".join(row), axis=1), y_train_resampled)
+    pipeline.fit(X_train_resampled, y_train_resampled)
 
     # Evaluate
-    y_pred = pipeline.predict(X_test.apply(lambda row: " ".join(row), axis=1))
+    y_pred = pipeline.predict(X_test)
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred))
 
@@ -765,9 +782,6 @@ def train_sklearn_model_from_csv(
         pickle.dump(pipeline, f)
 
     print(f"==> Trained model saved to '{model_path}'")
-
-
-
 
 if __name__ == "__main__":
     app()
