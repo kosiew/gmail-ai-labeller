@@ -732,9 +732,9 @@ def train_sklearn_model_from_csv(
     X = df[["From", "Subject", "Domain"]]
     y = df["Label"].astype(str)
 
-    # Split data
+    # Split data using stratified sampling
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=42, stratify=y
     )
 
     # Define pipeline with FeatureUnion, ensuring all text-based features are vectorized
@@ -766,9 +766,6 @@ def train_sklearn_model_from_csv(
         pickle.dump(pipeline, f)
 
     print(f"==> Trained model saved to '{model_path}'")
-
-
-
 
 if __name__ == "__main__":
     app()
