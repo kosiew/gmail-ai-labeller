@@ -24,7 +24,7 @@ from googleapiclient.discovery import build
 import pandas as pd
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -695,7 +695,7 @@ def train_sklearn_model_from_csv(
     1) Expects a CSV with columns: "From", "Subject", "Label"
     2) Extracts sender domain as a feature
     3) Splits data into train/test
-    4) Trains a TF-IDF + LogisticRegression pipeline
+    4) Trains a TF-IDF +  MultiNomialNB pipeline
     5) Prints classification report
     6) Saves the model pipeline to a .pkl file
     """
@@ -721,15 +721,19 @@ def train_sklearn_model_from_csv(
         X, y, test_size=0.2, random_state=42
     )
 
-    # Define pipeline with FeatureUnion
+    # Define pipeline with FeatureUnion, ensuring all text-based features are vectorized
     pipeline = Pipeline([
         ("features", FeatureUnion([
             ("tfidf_from", TfidfVectorizer()),  # TF-IDF for From field
             ("tfidf_subject", TfidfVectorizer()),  # TF-IDF for Subject field
-            ("domain_extractor", EmailDomainExtractor())  # Extract email domains
+            ("tfidf_domain", Pipeline([
+                ("extract_domain", EmailDomainExtractor()),  # Extract email domains
+                ("vectorizer", TfidfVectorizer())  # Convert domains to TF-IDF features
+            ]))
         ])),
-        ("clf", LogisticRegression())
+        ("clf", MultinomialNB())
     ])
+
 
     # Train
     pipeline.fit(X_train.apply(lambda row: " ".join(row), axis=1), y_train)
