@@ -723,11 +723,12 @@ def train_sklearn_model_from_csv(
     # Extract domain from "From" field
     df["Domain"] = df["From"].astype(str).apply(EmailDomainExtractor.extract_domain)
 
-    # Clean the "Subject" field
+    # Clean the "Subject" and "Domain" fields
     df["Cleaned_Subject"] = df["Subject"].astype(str).apply(clean_text)
+    df["Cleaned_Domain"] = df["Domain"].astype(str).apply(clean_text)
 
-    # Combine "From", "Cleaned_Subject", and "Domain" for training
-    X = df[["From", "Cleaned_Subject", "Domain"]]
+    # Combine "From", "Cleaned_Subject", and "Cleaned_Domain" for training
+    X = df[["From", "Cleaned_Subject", "Cleaned_Domain"]]
     y = df["Label"].astype(str)
 
     # Split data using stratified sampling
@@ -735,39 +736,44 @@ def train_sklearn_model_from_csv(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
+    # Define vectorizers for each text field
+    vectorizer_from = TfidfVectorizer()
+    vectorizer_subject = TfidfVectorizer()
+    vectorizer_domain = TfidfVectorizer()
+
+    # Fit and transform the training data
+    X_train_from = vectorizer_from.fit_transform(X_train["From"])
+    X_train_subject = vectorizer_subject.fit_transform(X_train["Cleaned_Subject"])
+    X_train_domain = vectorizer_domain.fit_transform(X_train["Cleaned_Domain"])
+
+    # Concatenate the vectorized features
+    from scipy.sparse import hstack
+    X_train_vectorized = hstack([X_train_from, X_train_subject, X_train_domain])
+
     # Apply SMOTE to handle class imbalance
     smote = SMOTE(random_state=42)
-    X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
+    X_train_resampled, y_train_resampled = smote.fit_resample(X_train_vectorized, y_train)
 
-    # Define pipeline with FeatureUnion, ensuring all text-based features are vectorized
-    pipeline = Pipeline([
-        ("features", FeatureUnion([
-            ("tfidf_from", TfidfVectorizer()),  # TF-IDF for From field
-            ("tfidf_subject", TfidfVectorizer()),  # TF-IDF for Cleaned_Subject field
-            ("tfidf_domain", Pipeline([
-                ("extract_domain", EmailDomainExtractor()),  # Extract email domains
-                ("vectorizer", TfidfVectorizer())  # Convert domains to TF-IDF features
-            ]))
-        ])),
-        ("clf", MultinomialNB())
-    ])
+    # Transform the test data
+    X_test_from = vectorizer_from.transform(X_test["From"])
+    X_test_subject = vectorizer_subject.transform(X_test["Cleaned_Subject"])
+    X_test_domain = vectorizer_domain.transform(X_test["Cleaned_Domain"])
+    X_test_vectorized = hstack([X_test_from, X_test_subject, X_test_domain])
 
-    # Train
-    pipeline.fit(X_train_resampled.apply(lambda row: " ".join(row), axis=1), y_train_resampled)
+    # Define and train the model
+    model = MultinomialNB()
+    model.fit(X_train_resampled, y_train_resampled)
 
     # Evaluate
-    y_pred = pipeline.predict(X_test.apply(lambda row: " ".join(row), axis=1))
+    y_pred = model.predict(X_test_vectorized)
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred))
 
-    # Save model
+    # Save model and vectorizers
     with open(model_path, "wb") as f:
-        pickle.dump(pipeline, f)
+        pickle.dump((model, vectorizer_from, vectorizer_subject, vectorizer_domain), f)
 
     print(f"==> Trained model saved to '{model_path}'")
-
-
-
 
 if __name__ == "__main__":
     app()
