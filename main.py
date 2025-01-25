@@ -31,6 +31,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 import typer
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from nltk.stem import WordNetLemmatizer
+from imblearn.over_sampling import SMOTE
 
 app = typer.Typer()
 
@@ -704,9 +705,10 @@ def train_sklearn_model_from_csv(
     1) Expects a CSV with columns: "From", "Subject", "Label"
     2) Extracts sender domain as a feature
     3) Splits data into train/test
-    4) Trains a TF-IDF +  MultiNomialNB pipeline
-    5) Prints classification report
-    6) Saves the model pipeline to a .pkl file
+    4) Applies SMOTE to handle class imbalance
+    5) Trains a TF-IDF +  MultiNomialNB pipeline
+    6) Prints classification report
+    7) Saves the model pipeline to a .pkl file
     """
     print("==> Starting train_sklearn_model_from_csv")
 
@@ -728,10 +730,14 @@ def train_sklearn_model_from_csv(
     X = df[["From", "Cleaned_Subject", "Domain"]]
     y = df["Label"].astype(str)
 
-    # Split data
+    # Split data using stratified sampling
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=42, stratify=y
     )
+
+    # Apply SMOTE to handle class imbalance
+    smote = SMOTE(random_state=42)
+    X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
 
     # Define pipeline with FeatureUnion, ensuring all text-based features are vectorized
     pipeline = Pipeline([
@@ -747,7 +753,7 @@ def train_sklearn_model_from_csv(
     ])
 
     # Train
-    pipeline.fit(X_train.apply(lambda row: " ".join(row), axis=1), y_train)
+    pipeline.fit(X_train_resampled.apply(lambda row: " ".join(row), axis=1), y_train_resampled)
 
     # Evaluate
     y_pred = pipeline.predict(X_test.apply(lambda row: " ".join(row), axis=1))
