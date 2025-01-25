@@ -685,7 +685,7 @@ class EmailDomainExtractor(BaseEstimator, TransformerMixin):
     @staticmethod
     def extract_domain(email):
         match = re.search(r'@([\w.-]+)', email)
-        return match.group(1) if match else "unknown"
+        return match.group(1).lower() if match else "unknown"
 
 lemmatizer = WordNetLemmatizer()
 
