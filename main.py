@@ -23,14 +23,16 @@ from googleapiclient.discovery import build
 #   pip install pandas scikit-learn
 import pandas as pd
 from sklearn.pipeline import Pipeline, FeatureUnion
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, ENGLISH_STOP_WORDS
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.compose import ColumnTransformer
 import typer
-from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from nltk.stem import WordNetLemmatizer
+
+DOMAIN_REGEX = re.compile(r'@([\w.-]+)')
 
 app = typer.Typer()
 
@@ -200,10 +202,9 @@ class SklearnEmailClassifier(IEmailClassifier):
             self.model = pickle.load(f)
 
     def classify(self, content: str) -> List[str]:
-        # Make a prediction using the pipeline
-        # You can, if you like, add additional preprocessing steps here
-        prediction = self.model.predict([content])[0]
-        # Return a list of labels (in this simple case, just one predicted label)
+        # Build a DataFrame with the columns that the pipeline expects.
+        df = pd.DataFrame([{"From": "", "Subject": content}])
+        prediction = self.model.predict(df)[0]
         return [prediction]
 
 
@@ -674,95 +675,109 @@ def write_emails_to_csv(output_csv, processor, fetcher):
     print(f"==> Extracted {counter} emails into {output_csv}")
 
 
-# Custom transformer to extract email domain
+
 class EmailDomainExtractor(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
-
+    
     def transform(self, X):
-        return [self.extract_domain(email) for email in X]
-
+        return [self.extract_domain(str(email)) for email in X]
+    
     @staticmethod
     def extract_domain(email):
-        match = re.search(r'@([\w.-]+)', email)
+        match = DOMAIN_REGEX.search(email)
         return match.group(1).lower() if match else "unknown"
+
 
 class TextCleaner(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
-
+    
     def transform(self, X):
-        return [self.clean_text(text) for text in X]
-
+        return [self.clean_text(str(text)) for text in X]
+    
     @staticmethod
     def clean_text(text):
         lemmatizer = WordNetLemmatizer()
         text = text.lower()
         text = re.sub(r'\W+', ' ', text)  # Remove special characters
-        text = ' '.join(lemmatizer.lemmatize(word) for word in text.split() if word not in ENGLISH_STOP_WORDS)
-        return text
+        return ' '.join(
+            lemmatizer.lemmatize(word) 
+            for word in text.split() 
+            if word not in ENGLISH_STOP_WORDS
+        )
 
 @app.command()
 def train_sklearn_model_from_csv(
     input_csv: str = "_extracted_emails.csv",
     model_path: str = "sklearn_email_model.pkl",
 ) -> None:
-    """
-    1) Expects a CSV with columns: "From", "Subject", "Label"
-    2) Extracts sender domain as a feature
-    3) Splits data into train/test
-    4) Trains a TF-IDF +  MultiNomialNB pipeline
-    5) Prints classification report
-    6) Saves the model pipeline to a .pkl file
-    """
+
     print("==> Starting train_sklearn_model_from_csv")
 
-    # Load data
+    # 1. Load data
     df = pd.read_csv(input_csv)
 
-    # Drop rows with missing or empty labels
+    # 2. Drop rows with missing or empty labels
     df = df.dropna(subset=["Label"])
     df["Label"] = df["Label"].astype(str)
     df = df[df["Label"].str.strip() != ""]
 
-    # Combine "From" and "Subject" for training
+    # 3. Extract features/target
     X = df[["From", "Subject"]]
     y = df["Label"].astype(str)
 
-    # Split data using stratified sampling
+    # 4. Split data
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    # Define pipeline with FeatureUnion, ensuring all text-based features are vectorized
+    # 5. Build a ColumnTransformer pipeline
+    preprocessor = ColumnTransformer([
+        ("subject_pipeline",
+         Pipeline([
+             ("clean_text", TextCleaner()),
+             ("tfidf_subject", TfidfVectorizer()),
+         ]),
+         "Subject"),
+        ("domain_pipeline",
+         Pipeline([
+             ("extract_domain", EmailDomainExtractor()),
+             ("tfidf_domain", TfidfVectorizer()),
+         ]),
+         "From"),
+        ("from_tfidf",
+         TfidfVectorizer(),
+         "From"),
+    ])
+
+    # 6. Full pipeline with classifier
     pipeline = Pipeline([
-        ("features", FeatureUnion([
-            ("tfidf_from", TfidfVectorizer()),  # TF-IDF for From field
-            ("tfidf_subject", Pipeline([
-                ("clean_text", TextCleaner()),  # Clean text
-                ("vectorizer", TfidfVectorizer())  # TF-IDF for Subject field
-            ])),
-            ("tfidf_domain", Pipeline([
-                ("extract_domain", EmailDomainExtractor()),  # Extract email domains
-                ("vectorizer", TfidfVectorizer())  # Convert domains to TF-IDF features
-            ]))
-        ])),
+        ("preprocessor", preprocessor),
         ("clf", MultinomialNB())
     ])
 
-    # Train
-    pipeline.fit(X_train.apply(lambda row: " ".join(row), axis=1), y_train)
+    # (Optional) Hyperparameter tuning with GridSearch
+    param_grid = {
+        "preprocessor__subject_pipeline__tfidf_subject__ngram_range": [(1,1), (1,2)],
+        "clf__alpha": [0.1, 1.0, 5.0]
+    }
+    grid_search = GridSearchCV(pipeline, param_grid, scoring='f1_macro', cv=5)
 
-    # Evaluate
-    y_pred = pipeline.predict(X_test.apply(lambda row: " ".join(row), axis=1))
+    # 7. Train
+    grid_search.fit(X_train, y_train)
+
+    # 8. Evaluate
+    y_pred = grid_search.predict(X_test)
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred))
 
-    # Save model
+    # 9. Save model
     with open(model_path, "wb") as f:
-        pickle.dump(pipeline, f)
+        pickle.dump(grid_search, f)
 
-    print(f"==> Trained model saved to '{model_path}'")
+    print(f"==> Trained model (GridSearchCV) saved to '{model_path}'")
+
 
 if __name__ == "__main__":
     app()
