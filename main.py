@@ -702,15 +702,6 @@ class TextCleaner(BaseEstimator, TransformerMixin):
         text = ' '.join(lemmatizer.lemmatize(word) for word in text.split() if word not in ENGLISH_STOP_WORDS)
         return text
 
-class DropMissingLabels(BaseEstimator, TransformerMixin):
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X, y=None):
-        X["Label"] = X["Label"].astype(str)
-        mask = X["Label"].notna() & X["Label"].str.strip().astype(bool)
-        return X[mask], y[mask] if y is not None else y
-
 @app.command()
 def train_sklearn_model_from_csv(
     input_csv: str = "_extracted_emails.csv",
@@ -729,8 +720,13 @@ def train_sklearn_model_from_csv(
     # Load data
     df = pd.read_csv(input_csv)
 
+    # Drop rows with missing or empty labels
+    df = df.dropna(subset=["Label"])
+    df["Label"] = df["Label"].astype(str)
+    df = df[df["Label"].str.strip() != ""]
+
     # Combine "From" and "Subject" for training
-    X = df[["From", "Subject", "Label"]]
+    X = df[["From", "Subject"]]
     y = df["Label"].astype(str)
 
     # Split data using stratified sampling
@@ -740,7 +736,6 @@ def train_sklearn_model_from_csv(
 
     # Define pipeline with FeatureUnion, ensuring all text-based features are vectorized
     pipeline = Pipeline([
-        ("drop_missing_labels", DropMissingLabels()),  # Drop rows with missing or empty labels
         ("features", FeatureUnion([
             ("tfidf_from", TfidfVectorizer()),  # TF-IDF for From field
             ("tfidf_subject", Pipeline([
@@ -756,11 +751,9 @@ def train_sklearn_model_from_csv(
     ])
 
     # Train
-    X_train, y_train = pipeline.named_steps["drop_missing_labels"].transform(X_train, y_train)
     pipeline.fit(X_train.apply(lambda row: " ".join(row), axis=1), y_train)
 
     # Evaluate
-    X_test, y_test = pipeline.named_steps["drop_missing_labels"].transform(X_test, y_test)
     y_pred = pipeline.predict(X_test.apply(lambda row: " ".join(row), axis=1))
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred))
