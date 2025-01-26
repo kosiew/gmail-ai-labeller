@@ -725,11 +725,8 @@ def train_sklearn_model_from_csv(
     df["Label"] = df["Label"].astype(str)
     df = df[df["Label"].str.strip() != ""]
 
-    # Extract domain from "From" field
-    df["Domain"] = df["From"].astype(str).apply(EmailDomainExtractor.extract_domain)
-
-    # Combine "From", "Subject", and "Domain" for training
-    X = df[["From", "Subject", "Domain"]]
+    # Combine "From" and "Subject" for training
+    X = df[["From", "Subject"]]
     y = df["Label"].astype(str)
 
     # Split data using stratified sampling
