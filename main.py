@@ -18,6 +18,7 @@ from typing import (
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+from google.auth.exceptions import RefreshError
 
 # For training (pandas, sklearn) – make sure you install them:
 #   pip install pandas scikit-learn
@@ -72,16 +73,26 @@ def authenticate_gmail():
             creds = pickle.load(token)
 
     # If no valid credentials, authenticate again
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            print("==> Refreshing expired credentials")
-            creds.refresh(Request())
-        else:
-            print("==> Authenticating new credentials")
-            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
-            creds = flow.run_local_server(port=0)
+    try:
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                print("==> Refreshing expired credentials")
+                creds.refresh(Request())
+            else:
+                print("==> Authenticating new credentials")
+                flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+                creds = flow.run_local_server(port=0)
 
-        # Save credentials for future use
+            # Save credentials for future use
+            print("==> Saving new credentials to token.pickle")
+            with open("token.pickle", "wb") as token:
+                pickle.dump(creds, token)
+    except RefreshError:
+        print("==> Refresh token has been expired or revoked. Re-authenticating.")
+        flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+        creds = flow.run_local_server(port=0)
+
+        # Save the new credentials for future use
         print("==> Saving new credentials to token.pickle")
         with open("token.pickle", "wb") as token:
             pickle.dump(creds, token)
