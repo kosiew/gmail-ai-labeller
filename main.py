@@ -489,7 +489,8 @@ class QueryFilterBuilder:
 
     def build(self):
         """Constructs the final query filter string."""
-        return " ".join(self.filters)
+        unique_filters = list(set(self.filters))
+        return " ".join(unique_filters)
 
 
 class EmailLabeller:
@@ -636,6 +637,7 @@ def extract_data_with_filter(
     Fetches all emails matching the given Gmail filter,
     extracts the 'From' and 'Subject',
     and writes them to a CSV file so you can manually add labels for training.
+    example gmail_filter: "from:pycoder older_than:60d -older_than:220d in:anywhere"
     """
 
     print(f"==> Starting extract_data_with_filter with filter: {gmail_filter}")
@@ -647,6 +649,7 @@ def extract_data_with_filter(
 def create_gmail_filter_fetcher(gmail_filter: str, processed: bool):
     service = get_gmail_service()
 
+    tabs = []
     processor = DefaultEmailProcessor(service)
     query_builder = QueryFilterBuilder()
     filters = gmail_filter.split()
@@ -655,8 +658,11 @@ def create_gmail_filter_fetcher(gmail_filter: str, processed: bool):
         query_builder.add_filter(key, value)
     query_builder.add_processed_filter(processed)
 
+    if not tabs:
+        query_builder.add_filter("in", "anywhere")
+
     query_filter = query_builder.build()
-    fetcher = EmailFetcher(service, tabs=[], query_filter=query_filter)
+    fetcher = EmailFetcher(service, tabs=tabs, query_filter=query_filter)
     return processor,fetcher
 
 def create_email_fetcher(folder, processed):
