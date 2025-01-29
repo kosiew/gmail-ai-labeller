@@ -760,6 +760,11 @@ def train_sklearn_model_from_csv(
     # (Optional) Hyperparameter tuning with GridSearch
     param_grid = {
         "preprocessor__subject_pipeline__tfidf_subject__ngram_range": [(1,1), (1,2)],
+        "preprocessor__subject_pipeline__tfidf_subject__max_df": [0.75, 1.0],
+        "preprocessor__subject_pipeline__tfidf_subject__min_df": [1, 2],
+        "preprocessor__domain_pipeline__tfidf_domain__ngram_range": [(1,1), (1,2)],
+        "preprocessor__domain_pipeline__tfidf_domain__max_df": [0.75, 1.0],
+        "preprocessor__domain_pipeline__tfidf_domain__min_df": [1, 2],
         "clf__alpha": [0.1, 1.0, 5.0]
     }
     grid_search = GridSearchCV(pipeline, param_grid, scoring='f1_macro', cv=5)
