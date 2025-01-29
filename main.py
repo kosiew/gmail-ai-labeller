@@ -123,6 +123,7 @@ class Folders(Enum):
     PROMOTIONS = "CATEGORY_PROMOTIONS"
     UPDATES = "CATEGORY_UPDATES"
     TRASH = "TRASH"
+    NONE = ""
 
 # -------------------------------------------------------------------------
 #                          Protocol Definitions
@@ -420,11 +421,11 @@ class EmailFetcher:
     def __init__(
         self,
         service,
-        tabs: List[Folders] = [Folders.UPDATES, Folders.PROMOTIONS ],
+        tabs: List[Folders] = [Folders.UPDATES, Folders.PROMOTIONS],
         query_filter: str = DEFAULT_QUERY_FILTER,
     ):
         self.service = service
-        self.tabs = tabs
+        self.tabs = tabs if tabs else [Folders.NONE]
         self.query_filter = query_filter
 
     def fetch_emails(self) -> Iterator[Dict[str, Any]]:
@@ -453,17 +454,15 @@ class EmailFetcher:
         Fetch emails from a specific Gmail tab,
         excluding archived/processed/sent messages.
         """
-        results = (
-            self.service.users()
-            .messages()
-            .list(
-                userId="me",
-                labelIds=[tab],
-                q=self.query_filter,
-                pageToken=page_token,
-            )
-            .execute()
-        )
+        list_args = {
+            "userId": "me",
+            "q": self.query_filter,
+            "pageToken": page_token,
+        }
+        if tab:
+            list_args["labelIds"] = [tab]
+
+        results = self.service.users().messages().list(**list_args).execute()
 
         messages = results.get("messages", [])
         next_page_token = results.get("nextPageToken")
