@@ -49,6 +49,8 @@ DEFAULT_QUERY_FILTER = (
     f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
 )
 
+EXTRACTED_EMAILS_CSV = "extracted_emails.csv"
+
 # -------------------------------------------------------------------------
 #                           Authentication Helper
 # -------------------------------------------------------------------------
@@ -537,7 +539,7 @@ def label(classifier: IEmailClassifier):
 # -------------------------------------------------------------------------
 @app.command()
 def append_to_extracted_emails(
-    input_csv: str = "extracted_emails.csv", output_csv: str = "_extracted_emails.csv"
+    input_csv: str = EXTRACTED_EMAILS_CSV, output_csv: str = f"_{EXTRACTED_EMAILS_CSV}"
 ) -> None:
     """
     Append rows from input_csv to output_csv.
@@ -585,7 +587,7 @@ def sklearn_label():
 @app.command()
 def extract_data_from_emails(
     folder: Folders = Folders.UPDATES.value,
-    output_csv: str = "extracted_emails.csv",
+    output_csv: str = EXTRACTED_EMAILS_CSV,
     processed: bool = False,
 ) -> None:
     """
@@ -603,7 +605,7 @@ def extract_data_from_emails(
 @app.command()
 def extract_data_from_trash(
     folder: Folders = Folders.TRASH.value,
-    output_csv: str = "extracted_emails.csv",
+    output_csv: str = EXTRACTED_EMAILS_CSV,
     processed: bool = False,
 ) -> None:
     """
@@ -616,6 +618,38 @@ def extract_data_from_trash(
     processor, fetcher = create_trash_email_fetcher()
 
     # 3. Write results to CSV
+    write_emails_to_csv(output_csv, processor, fetcher)
+
+@app.command()
+def extract_data_with_filter(
+    gmail_filter: str,
+    output_csv: str = EXTRACTED_EMAILS_CSV,
+    processed: bool = False,
+) -> None:
+    """
+    Fetches all emails matching the given Gmail filter,
+    extracts the 'From' and 'Subject',
+    and writes them to a CSV file so you can manually add labels for training.
+    """
+
+    print(f"==> Starting extract_data_with_filter with filter: {gmail_filter}")
+    service = get_gmail_service()
+
+    processor = DefaultEmailProcessor(service)
+    query_builder = QueryFilterBuilder()
+    filters = gmail_filter.split()
+    for filter_item in filters:
+        key, value = filter_item.split(":", 1)
+        query_builder.add_filter(key, value)
+    if processed:
+        query_builder.add_filter("label", LABEL_PROCESSED)
+    else:
+        query_builder.add_filter("-label", LABEL_PROCESSED)
+
+    query_filter = query_builder.build()
+    fetcher = EmailFetcher(service, tabs=[], query_filter=query_filter)
+
+    # Write results to CSV
     write_emails_to_csv(output_csv, processor, fetcher)
 
 def create_email_fetcher(folder, processed):
