@@ -478,6 +478,14 @@ class QueryFilterBuilder:
         """Adds a filter condition to the query."""
         self.filters.append(f"{label}:{value}")
         return self
+    
+    def add_processed_filter(self, processed: bool):
+        """Adds a filter condition to the query."""
+        if processed:
+            self.filters.append(f"label:{LABEL_PROCESSED}")
+        else:
+            self.filters.append(f"-label:{LABEL_PROCESSED}")
+        return self
 
     def build(self):
         """Constructs the final query filter string."""
@@ -603,7 +611,6 @@ def extract_data_from_emails(
 
 @app.command()
 def extract_data_from_trash(
-    folder: Folders = Folders.TRASH.value,
     output_csv: str = EXTRACTED_EMAILS_CSV,
     processed: bool = False,
 ) -> None:
@@ -614,7 +621,7 @@ def extract_data_from_trash(
     """
 
     print("==> Starting extract_data_from_emails")
-    processor, fetcher = create_trash_email_fetcher()
+    processor, fetcher = create_trash_email_fetcher(processed)
 
     # 3. Write results to CSV
     write_emails_to_csv(output_csv, processor, fetcher)
@@ -632,6 +639,12 @@ def extract_data_with_filter(
     """
 
     print(f"==> Starting extract_data_with_filter with filter: {gmail_filter}")
+    processor, fetcher = create_gmail_filter_fetcher(gmail_filter, processed)
+
+    # Write results to CSV
+    write_emails_to_csv(output_csv, processor, fetcher)
+
+def create_gmail_filter_fetcher(gmail_filter: str, processed: bool):
     service = get_gmail_service()
 
     processor = DefaultEmailProcessor(service)
@@ -640,16 +653,11 @@ def extract_data_with_filter(
     for filter_item in filters:
         key, value = filter_item.split(":", 1)
         query_builder.add_filter(key, value)
-    if processed:
-        query_builder.add_filter("label", LABEL_PROCESSED)
-    else:
-        query_builder.add_filter("-label", LABEL_PROCESSED)
+    query_builder.add_processed_filter(processed)
 
     query_filter = query_builder.build()
     fetcher = EmailFetcher(service, tabs=[], query_filter=query_filter)
-
-    # Write results to CSV
-    write_emails_to_csv(output_csv, processor, fetcher)
+    return processor,fetcher
 
 def create_email_fetcher(folder, processed):
     service = get_gmail_service()
@@ -659,30 +667,16 @@ def create_email_fetcher(folder, processed):
     query_builder.add_filter("-in", "sent").add_filter(
         "-older_than", OLDER_THAN
     ).add_filter("-label", "ARCHIVE")
-    if processed:
-        query_builder.add_filter("label", LABEL_PROCESSED)
-    else:
-        query_builder.add_filter("-label", LABEL_PROCESSED)
+    query_builder.add_processed_filter(processed)
 
     query_filter = query_builder.build()
     fetcher = EmailFetcher(service, tabs=[folder], query_filter=query_filter)
     return processor,fetcher
 
-def create_trash_email_fetcher():
-    service = get_gmail_service()
-
-    processor = DefaultEmailProcessor(service)
-    query_builder = QueryFilterBuilder()
-    query_builder.add_filter(
-        "in", "trash"
-    ).add_filter(
-        "-older_than", OLDER_THAN
-    ).add_filter(
-        "-label", LABEL_PROCESSED
-    )
-    query_filter = query_builder.build()
-    fetcher = EmailFetcher(service, tabs=[Folders.TRASH], query_filter=query_filter)
-    return processor, fetcher
+def create_trash_email_fetcher(processed: bool):
+    gmail_filter = f"in:trash -older_than:{OLDER_THAN}"
+        
+    return create_gmail_filter_fetcher(gmail_filter, processed)
 
 def write_emails_to_csv(output_csv, processor, fetcher):
     with open(output_csv, "w", newline="", encoding="utf-8") as csvfile:
