@@ -42,6 +42,7 @@ GPT4ALL_MODEL = "mistral-7b-instruct-v0"
 LABELS = ["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED = "processed"
 LABEL_ARCHIVED = "ARCHIVE"
+TOKEN_PICKLE = "token.pickle"
 OLDER_THAN = "30d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
@@ -62,16 +63,16 @@ EXTRACTED_EMAILS_CSV = "extracted_emails.csv"
 def authenticate_gmail():
     """
     Authenticate to Gmail using OAuth.
-    Stores/loads credentials in 'token.pickle'.
+    Stores/loads credentials in TOKEN_PICKLE.
     """
     print("==> Starting authenticate_gmail")
     SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
     creds = None
 
     # Load stored credentials if available
-    if os.path.exists("token.pickle"):
-        print("==> Loading stored credentials from token.pickle")
-        with open("token.pickle", "rb") as token:
+    if os.path.exists(TOKEN_PICKLE):
+        print(f"==> Loading stored credentials from {TOKEN_PICKLE}")
+        with open(TOKEN_PICKLE, "rb") as token:
             creds = pickle.load(token)
 
     # If no valid credentials, authenticate again
@@ -86,8 +87,8 @@ def authenticate_gmail():
                 creds = flow.run_local_server(port=0)
 
             # Save credentials for future use
-            print("==> Saving new credentials to token.pickle")
-            with open("token.pickle", "wb") as token:
+            print(f"==> Saving new credentials to {TOKEN_PICKLE}")
+            with open(TOKEN_PICKLE, "wb") as token:
                 pickle.dump(creds, token)
     except RefreshError:
         print("==> Refresh token has been expired or revoked. Re-authenticating.")
@@ -95,8 +96,8 @@ def authenticate_gmail():
         creds = flow.run_local_server(port=0)
 
         # Save the new credentials for future use
-        print("==> Saving new credentials to token.pickle")
-        with open("token.pickle", "wb") as token:
+        print(f"==> Saving new credentials to {TOKEN_PICKLE}")
+        with open(TOKEN_PICKLE, "wb") as token:
             pickle.dump(creds, token)
 
     print("==> Finished authenticate_gmail")
