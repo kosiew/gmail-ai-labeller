@@ -546,6 +546,7 @@ def label(classifier: IEmailClassifier):
         query_builder.add_filter("-in", "sent")
         .add_filter("-older_than", OLDER_THAN)
         .add_filter("-label", "ARCHIVE")
+        .add_filter("-label", LABEL_PROCESSED)
         .build()
     )
     fetcher = EmailFetcher(service, query_filter=query_filter)
