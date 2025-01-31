@@ -41,6 +41,7 @@ app = typer.Typer()
 GPT4ALL_MODEL = "mistral-7b-instruct-v0"
 LABELS = ["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED = "processed"
+LABEL_ARCHIVED = "ARCHIVE"
 OLDER_THAN = "30d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
@@ -48,7 +49,7 @@ MAX_CHARACTERS = 4000
 MODEL_FILE="sklearn_email_model.pkl"
 
 DEFAULT_QUERY_FILTER = (
-    f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
+    f"-label:{LABEL_ARCHIVED} -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
 )
 
 EXTRACTED_EMAILS_CSV = "extracted_emails.csv"
@@ -545,7 +546,7 @@ def label(classifier: IEmailClassifier):
     query_filter = (
         query_builder.add_filter("-in", "sent")
         .add_filter("-older_than", OLDER_THAN)
-        .add_filter("-label", "ARCHIVE")
+        .add_filter("-label", LABEL_ARCHIVED)
         .add_filter("-label", LABEL_PROCESSED)
         .build()
     )
@@ -685,7 +686,7 @@ def create_email_fetcher(folder, processed):
     query_builder = QueryFilterBuilder()
     query_builder.add_filter("-in", "sent").add_filter(
         "-older_than", OLDER_THAN
-    ).add_filter("-label", "ARCHIVE")
+    ).add_filter("-label", LABEL_ARCHIVED)
     query_builder.add_processed_filter(processed)
 
     query_filter = query_builder.build()
