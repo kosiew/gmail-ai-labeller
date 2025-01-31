@@ -45,6 +45,7 @@ OLDER_THAN = "30d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
 MAX_CHARACTERS = 4000
+MODEL_FILE="sklearn_email_model.pkl"
 
 DEFAULT_QUERY_FILTER = (
     f"-label:ARCHIVE -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
@@ -210,7 +211,7 @@ class SklearnEmailClassifier(IEmailClassifier):
     and predicts labels from email content.
     """
 
-    def __init__(self, model_path="sklearn_email_model.pkl"):
+    def __init__(self, model_path=MODEL_FILE):
         print(f"==> Loading sklearn model from {model_path}")
         with open(model_path, "rb") as f:
             self.model = pickle.load(f)
@@ -599,7 +600,7 @@ def llm_label():
 
 @app.command()
 def sklearn_label():
-    classifier = SklearnEmailClassifier(model_path="sklearn_email_model.pkl")
+    classifier = SklearnEmailClassifier(model_path=MODEL_FILE)
     label(classifier)
 
 
@@ -754,7 +755,7 @@ class TextCleaner(BaseEstimator, TransformerMixin):
 @app.command()
 def train_sklearn_model_from_csv(
     input_csv: str = "_extracted_emails.csv",
-    model_path: str = "sklearn_email_model.pkl",
+    model_path: str = MODEL_FILE,
 ) -> None:
 
     print("==> Starting train_sklearn_model_from_csv")
