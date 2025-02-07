@@ -47,13 +47,16 @@ OLDER_THAN = "30d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
 MAX_CHARACTERS = 4000
-MODEL_FILE="sklearn_email_model.pkl"
+
+BASE_DIR = os.path.dirname(__file__)
+MODEL_FILE = os.path.join(BASE_DIR, "sklearn_email_model.pkl")
+CREDENTIALS_JSON = os.path.join(BASE_DIR, "credentials.json")
+EXTRACTED_EMAILS_CSV = os.path.join(BASE_DIR, "extracted_emails.csv")
 
 DEFAULT_QUERY_FILTER = (
     f"-label:{LABEL_ARCHIVED} -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
 )
 
-EXTRACTED_EMAILS_CSV = "extracted_emails.csv"
 
 # -------------------------------------------------------------------------
 #                           Authentication Helper
@@ -83,7 +86,7 @@ def authenticate_gmail():
                 creds.refresh(Request())
             else:
                 print("==> Authenticating new credentials")
-                flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_JSON, SCOPES)
                 creds = flow.run_local_server(port=0)
 
             # Save credentials for future use
@@ -92,7 +95,7 @@ def authenticate_gmail():
                 pickle.dump(creds, token)
     except RefreshError:
         print("==> Refresh token has been expired or revoked. Re-authenticating.")
-        flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+        flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_JSON, SCOPES)
         creds = flow.run_local_server(port=0)
 
         # Save the new credentials for future use
