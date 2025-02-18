@@ -1,0 +1,69 @@
+Metadata-Version: 2.2
+Name: gmail-ai-labeller
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: google-api-python-client>=2.159.0
+Requires-Dist: google-auth>=2.37.0
+Requires-Dist: google-auth-httplib2>=0.2.0
+Requires-Dist: google-auth-oauthlib>=1.2.1
+Requires-Dist: ipython>=8.31.0
+Requires-Dist: scikit-learn>=1.6.1
+Requires-Dist: numpy>=2.2.2
+Requires-Dist: scipy>=1.15.1
+Requires-Dist: typer>=0.15.1
+Requires-Dist: pandas>=2.2.3
+Requires-Dist: nltk>=3.9.1
+
+# gmail-ai-labeller
+
+This script adds labels to mails in my gmail for easy management.
+
+## Running Typer Commands
+
+To run the Typer commands, use the following syntax:
+
+```sh
+python main.py COMMAND [OPTIONS]
+```
+
+### Example Commands
+
+To list all available commands:
+```sh
+python main.py --help
+```
+
+To append rows from one CSV to another:
+```sh
+python main.py append-to-extracted-emails --input-csv INPUT_CSV --output-csv OUTPUT_CSV
+```
+
+To label emails using the default LLM classifier:
+```sh
+python main.py llm-label
+```
+
+To label emails using the sklearn classifier:
+```sh
+python main.py sklearn-label
+```
+
+To extract data from processed emails:
+```sh
+python main.py extract-data-from-processed-emails --output-csv OUTPUT_CSV
+```
+
+To train the sklearn model from a CSV file:
+```sh
+python main.py train-sklearn-model-from-csv --input-csv INPUT_CSV --model-path MODEL_PATH
+```
+
+## Update sklearn model
+To update the sklearn model, collect a few days of unprocessed data, then
+1. extract-data
+2. label the data 
+3. append the data to _extracted
+4. run training
