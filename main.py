@@ -42,7 +42,6 @@ GPT4ALL_MODEL = "mistral-7b-instruct-v0"
 LABELS = ["programming", "news", "machine_learning", "etc"]
 LABEL_PROCESSED = "processed"
 LABEL_ARCHIVED = "ARCHIVE"
-TOKEN_PICKLE = "token.pickle"
 OLDER_THAN = "30d"
 MAX_CONTEXT = 2048
 MAX_CHARACTERS = MAX_CONTEXT * 4 - 150
@@ -52,6 +51,7 @@ BASE_DIR = os.path.dirname(__file__)
 MODEL_FILE = os.path.join(BASE_DIR, "sklearn_email_model.pkl")
 CREDENTIALS_JSON = os.path.join(BASE_DIR, "credentials.json")
 EXTRACTED_EMAILS_CSV = os.path.join(BASE_DIR, "extracted_emails.csv")
+TOKEN_PICKLE = os.path.join(BASE_DIR, "token.pickle")
 
 DEFAULT_QUERY_FILTER = (
     f"-label:{LABEL_ARCHIVED} -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
