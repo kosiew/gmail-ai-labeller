@@ -156,7 +156,7 @@ class IEmailClassifier(Protocol):
     that returns a list of labels.
     """
 
-    def classify(self, content: str) -> List[str]: ...
+    def classify(self, email_data: EmailData) -> List[str]: ...
 
 
 @runtime_checkable
@@ -222,9 +222,11 @@ class SklearnEmailClassifier(IEmailClassifier):
         with open(model_path, "rb") as f:
             self.model = pickle.load(f)
 
-    def classify(self, content: str) -> List[str]:
+    def classify(self, email_data: EmailData) -> List[str]:
         # Build a DataFrame with the columns that the pipeline expects.
-        df = pd.DataFrame([{"From": "", "Subject": content}])
+        df = pd.DataFrame(
+            [{"From": email_data.from_, "Subject": email_data.full_content}]
+        )
         prediction = self.model.predict(df)[0]
         return [prediction]
 
@@ -239,8 +241,8 @@ class DefaultEmailClassifier:
         self.model = model
         self.valid_labels = valid_labels if valid_labels else LABELS
 
-    def classify(self, content: str) -> List[str]:
-        truncated_content = content[:MAX_CHARACTERS]
+    def classify(self, email_data: EmailData) -> List[str]:
+        truncated_content = email_data.full_content[:MAX_CHARACTERS]
         try:
             print("==> Starting classify_email_with_llm")
             labels_joined = ",".join(self.valid_labels)
@@ -525,9 +527,8 @@ class EmailLabeller:
         print(f"==> Processing message ID: {msg_id}")
         email_data = self.processor.get_email_data(msg_id)
         subject = email_data.subject
-        full_content = email_data.full_content
 
-        labels = self.classifier.classify(full_content)
+        labels = self.classifier.classify(email_data)
         print(f"==> subject: {subject} - Classified labels: {labels}")
 
         self.processor.apply_labels(msg_id, labels)
