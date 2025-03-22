@@ -662,10 +662,10 @@ def extract_data_with_filter(
     write_emails_to_csv(output_csv, processor, fetcher)
 
 
-def create_gmail_filter_fetcher(gmail_filter: str, processed: bool):
+def create_gmail_filter_fetcher(gmail_filter: str, processed: bool, folder=None):
     service = get_gmail_service()
 
-    tabs = []
+    tabs = [folder] if folder else []
     processor = DefaultEmailProcessor(service)
     query_builder = QueryFilterBuilder()
     filters = gmail_filter.split()
@@ -683,21 +683,18 @@ def create_gmail_filter_fetcher(gmail_filter: str, processed: bool):
 
 
 def create_email_fetcher(folder, processed, label=None):
-    service = get_gmail_service()
+    # Build the gmail_filter string from parameters
+    filter_parts = ["-in:sent", f"-older_than:{OLDER_THAN}", f"-label:{LABEL_ARCHIVED}"]
 
-    processor = DefaultEmailProcessor(service)
-    query_builder = QueryFilterBuilder()
-    query_builder.add_filter("-in", "sent").add_filter(
-        "-older_than", OLDER_THAN
-    ).add_filter("-label", LABEL_ARCHIVED)
-    query_builder.add_processed_filter(processed)
-
+    # Add label filter if specified
     if label:
-        query_builder.add_filter("label", label)
+        filter_parts.append(f"label:{label}")
 
-    query_filter = query_builder.build()
-    fetcher = EmailFetcher(service, tabs=[folder], query_filter=query_filter)
-    return processor, fetcher
+    # Combine all filter parts into a single string
+    gmail_filter = " ".join(filter_parts)
+
+    # Reuse create_gmail_filter_fetcher with our constructed filter and folder
+    return create_gmail_filter_fetcher(gmail_filter, processed, folder)
 
 
 def create_trash_email_fetcher(processed: bool):
