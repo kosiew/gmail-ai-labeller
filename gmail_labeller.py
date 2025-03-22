@@ -140,6 +140,7 @@ class Folders(Enum):
     PROMOTIONS = "CATEGORY_PROMOTIONS"
     UPDATES = "CATEGORY_UPDATES"
     TRASH = "TRASH"
+    INBOX = "INBOX"
     NONE = ""
 
 
