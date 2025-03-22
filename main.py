@@ -33,7 +33,7 @@ from sklearn.compose import ColumnTransformer
 import typer
 from nltk.stem import WordNetLemmatizer
 
-DOMAIN_REGEX = re.compile(r'@([\w.-]+)')
+DOMAIN_REGEX = re.compile(r"@([\w.-]+)")
 
 app = typer.Typer()
 
@@ -53,9 +53,7 @@ CREDENTIALS_JSON = os.path.join(BASE_DIR, "credentials.json")
 EXTRACTED_EMAILS_CSV = os.path.join(BASE_DIR, "extracted_emails.csv")
 TOKEN_PICKLE = os.path.join(BASE_DIR, "token.pickle")
 
-DEFAULT_QUERY_FILTER = (
-    f"-label:{LABEL_ARCHIVED} -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
-)
+DEFAULT_QUERY_FILTER = f"-label:{LABEL_ARCHIVED} -label:{LABEL_PROCESSED} -older_than:{OLDER_THAN} -in:sent"
 
 
 # -------------------------------------------------------------------------
@@ -86,7 +84,9 @@ def authenticate_gmail():
                 creds.refresh(Request())
             else:
                 print("==> Authenticating new credentials")
-                flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_JSON, SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    CREDENTIALS_JSON, SCOPES
+                )
                 creds = flow.run_local_server(port=0)
 
             # Save credentials for future use
@@ -141,6 +141,7 @@ class Folders(Enum):
     UPDATES = "CATEGORY_UPDATES"
     TRASH = "TRASH"
     NONE = ""
+
 
 # -------------------------------------------------------------------------
 #                          Protocol Definitions
@@ -356,13 +357,6 @@ class DefaultEmailProcessor:
         ).execute()
         print("==> Finished apply_labels")
 
-    def get_subject_and_content(self, msg_id: str) -> Tuple[str, str]:
-        """
-        Retrieve the (subject, content) for a message.
-        """
-        email_data = self.get_email_data(msg_id)
-        return email_data.subject, email_data.full_content
-
     def get_email_data(
         self, msg_id: str, fields: List[str] = ["from_", "subject", "content"]
     ) -> EmailData:
@@ -495,7 +489,7 @@ class QueryFilterBuilder:
         """Adds a filter condition to the query."""
         self.filters.append(f"{label}:{value}")
         return self
-    
+
     def add_processed_filter(self, processed: bool):
         """Adds a filter condition to the query."""
         if processed:
@@ -529,15 +523,15 @@ class EmailLabeller:
           - apply labels (via IEmailProcessor)
         """
         print(f"==> Processing message ID: {msg_id}")
-        subject, full_content = self.processor.get_subject_and_content(msg_id)
+        email_data = self.processor.get_email_data(msg_id)
+        subject = email_data.subject
+        full_content = email_data.full_content
 
         labels = self.classifier.classify(full_content)
         print(f"==> subject: {subject} - Classified labels: {labels}")
 
         self.processor.apply_labels(msg_id, labels)
         print(f"==> Applied labels to message ID: {msg_id}")
-
-
 
 
 def label(classifier: IEmailClassifier):
@@ -628,6 +622,7 @@ def extract_data_from_emails(
     # 3. Write results to CSV
     write_emails_to_csv(output_csv, processor, fetcher)
 
+
 @app.command()
 def extract_data_from_trash(
     output_csv: str = EXTRACTED_EMAILS_CSV,
@@ -644,6 +639,7 @@ def extract_data_from_trash(
 
     # 3. Write results to CSV
     write_emails_to_csv(output_csv, processor, fetcher)
+
 
 @app.command()
 def extract_data_with_filter(
@@ -664,6 +660,7 @@ def extract_data_with_filter(
     # Write results to CSV
     write_emails_to_csv(output_csv, processor, fetcher)
 
+
 def create_gmail_filter_fetcher(gmail_filter: str, processed: bool):
     service = get_gmail_service()
 
@@ -681,7 +678,8 @@ def create_gmail_filter_fetcher(gmail_filter: str, processed: bool):
 
     query_filter = query_builder.build()
     fetcher = EmailFetcher(service, tabs=tabs, query_filter=query_filter)
-    return processor,fetcher
+    return processor, fetcher
+
 
 def create_email_fetcher(folder, processed):
     service = get_gmail_service()
@@ -695,12 +693,14 @@ def create_email_fetcher(folder, processed):
 
     query_filter = query_builder.build()
     fetcher = EmailFetcher(service, tabs=[folder], query_filter=query_filter)
-    return processor,fetcher
+    return processor, fetcher
+
 
 def create_trash_email_fetcher(processed: bool):
     gmail_filter = f"in:trash -older_than:{OLDER_THAN}"
-        
+
     return create_gmail_filter_fetcher(gmail_filter, processed)
+
 
 def write_emails_to_csv(output_csv, processor, fetcher):
     with open(output_csv, "w", newline="", encoding="utf-8") as csvfile:
@@ -726,14 +726,13 @@ def write_emails_to_csv(output_csv, processor, fetcher):
     print(f"==> Extracted {counter} emails into {output_csv}")
 
 
-
 class EmailDomainExtractor(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
-    
+
     def transform(self, X):
         return [self.extract_domain(str(email)) for email in X]
-    
+
     @staticmethod
     def extract_domain(email):
         match = DOMAIN_REGEX.search(email)
@@ -743,20 +742,21 @@ class EmailDomainExtractor(BaseEstimator, TransformerMixin):
 class TextCleaner(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
-    
+
     def transform(self, X):
         return [self.clean_text(str(text)) for text in X]
-    
+
     @staticmethod
     def clean_text(text):
         lemmatizer = WordNetLemmatizer()
         text = text.lower()
-        text = re.sub(r'\W+', ' ', text)  # Remove special characters
-        return ' '.join(
-            lemmatizer.lemmatize(word) 
-            for word in text.split() 
+        text = re.sub(r"\W+", " ", text)  # Remove special characters
+        return " ".join(
+            lemmatizer.lemmatize(word)
+            for word in text.split()
             if word not in ENGLISH_STOP_WORDS
         )
+
 
 @app.command()
 def train_sklearn_model_from_csv(
@@ -784,36 +784,41 @@ def train_sklearn_model_from_csv(
     )
 
     # 5. Build a ColumnTransformer pipeline
-    preprocessor = ColumnTransformer([
-        ("subject_pipeline",
-         Pipeline([
-             ("clean_text", TextCleaner()),
-             ("tfidf_subject", TfidfVectorizer()),
-         ]),
-         "Subject"),
-        ("domain_pipeline",
-         Pipeline([
-             ("extract_domain", EmailDomainExtractor()),
-             ("tfidf_domain", TfidfVectorizer()),
-         ]),
-         "From"),
-        ("from_tfidf",
-         TfidfVectorizer(),
-         "From"),
-    ])
+    preprocessor = ColumnTransformer(
+        [
+            (
+                "subject_pipeline",
+                Pipeline(
+                    [
+                        ("clean_text", TextCleaner()),
+                        ("tfidf_subject", TfidfVectorizer()),
+                    ]
+                ),
+                "Subject",
+            ),
+            (
+                "domain_pipeline",
+                Pipeline(
+                    [
+                        ("extract_domain", EmailDomainExtractor()),
+                        ("tfidf_domain", TfidfVectorizer()),
+                    ]
+                ),
+                "From",
+            ),
+            ("from_tfidf", TfidfVectorizer(), "From"),
+        ]
+    )
 
     # 6. Full pipeline with classifier
-    pipeline = Pipeline([
-        ("preprocessor", preprocessor),
-        ("clf", MultinomialNB())
-    ])
+    pipeline = Pipeline([("preprocessor", preprocessor), ("clf", MultinomialNB())])
 
     # (Optional) Hyperparameter tuning with GridSearch
     param_grid = {
-        "preprocessor__subject_pipeline__tfidf_subject__ngram_range": [(1,1), (1,2)],
-        "clf__alpha": [0.01, 0.1, 1.0, 5.0, 10.0]    
+        "preprocessor__subject_pipeline__tfidf_subject__ngram_range": [(1, 1), (1, 2)],
+        "clf__alpha": [0.01, 0.1, 1.0, 5.0, 10.0],
     }
-    grid_search = GridSearchCV(pipeline, param_grid, scoring='f1_macro', cv=5)
+    grid_search = GridSearchCV(pipeline, param_grid, scoring="f1_macro", cv=5)
 
     # 7. Train
     grid_search.fit(X_train, y_train)
