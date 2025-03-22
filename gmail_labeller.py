@@ -494,11 +494,8 @@ class QueryFilterBuilder:
 
     def add_processed_filter(self, processed: bool):
         """Adds a filter condition to the query."""
-        if processed:
-            self.filters.append(f"label:{LABEL_PROCESSED}")
-        else:
-            self.filters.append(f"-label:{LABEL_PROCESSED}")
-        return self
+        label_prefix = "" if processed else "-"
+        return self.add_filter(f"{label_prefix}label", LABEL_PROCESSED)
 
     def build(self):
         """Constructs the final query filter string."""
@@ -610,15 +607,18 @@ def extract_data_from_emails(
     folder: Folders = Folders.UPDATES.value,
     output_csv: str = EXTRACTED_EMAILS_CSV,
     processed: bool = False,
+    label: str = None,
 ) -> None:
     """
     Fetches all emails with or without the 'processed' label,
     extracts the 'From' and 'Subject',
     and writes them to a CSV file so you can manually add labels for training.
+
+    If label is provided, it will fetch emails with that specific label.
     """
 
     print("==> Starting extract_data_from_emails")
-    processor, fetcher = create_email_fetcher(folder, processed)
+    processor, fetcher = create_email_fetcher(folder, processed, label)
 
     # 3. Write results to CSV
     write_emails_to_csv(output_csv, processor, fetcher)
@@ -682,7 +682,7 @@ def create_gmail_filter_fetcher(gmail_filter: str, processed: bool):
     return processor, fetcher
 
 
-def create_email_fetcher(folder, processed):
+def create_email_fetcher(folder, processed, label=None):
     service = get_gmail_service()
 
     processor = DefaultEmailProcessor(service)
@@ -691,6 +691,9 @@ def create_email_fetcher(folder, processed):
         "-older_than", OLDER_THAN
     ).add_filter("-label", LABEL_ARCHIVED)
     query_builder.add_processed_filter(processed)
+
+    if label:
+        query_builder.add_filter("label", label)
 
     query_filter = query_builder.build()
     fetcher = EmailFetcher(service, tabs=[folder], query_filter=query_filter)
