@@ -1,38 +1,39 @@
 From,Subject,Label
 """Data Points @ DeepLearning.AI"" <datapoints@deeplearning.ai>",Texas legislation would aggressively regulate AI,2
+"""Data Points @ DeepLearning.AI"" <datapoints@deeplearning.ai>",European CEOs urge 2-year pause in EU AI Act,2
 """DeepLearning.AI"" <hello@deeplearning.ai>",Your 2024 Learning Highlights are here!,2
 """eInvest@TA Investment"" <investor.taim@ta.com.my>",Password Reset Request,2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Dict Comprehensions, Data Visualization, Memory Leaks, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Django vs FastAPI, Interacting With Python, Data Cleaning, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","DRF, Temp Files, Dataclasses, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Monkeypatching Django, LLMs with Python, RegExes, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","PyMyFlySpy, Set Comprehensions, State of Typing, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","PySheets, REPL Shortcuts, Empty Tests, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Sentiment Analysis, Topological Sort, Web Security, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Top 5 of 2024, Ninja, Deploying on AWS, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Web Scraping Tips, Python 3.13 Performance Boosts, Writing Interpreters & More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Debugging TUIs, Dictionary Comprehensions, Puzzles, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Web Scraping Tips, Python 3.13 Performance Boosts, Writing Interpreters & More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","PySheets, REPL Shortcuts, Empty Tests, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Sudoko in Packaging, Thread Safety, Sigstore, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Unlock Python's Pattern Matching, Combinatoric Iterators, SSH Scripting, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Lots of PEPs, More Py3.13, HPy, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Immutable Types, DuckDB & Pyodide, Free Threaded, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Python 3.13, pdb, Django Project Ideas, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Python 3.13, Rust Extensions, doctest, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","NumPy where(), Python & R, HTTP Clients, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Pydantic, PSF Office Hours, Polars, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Astronomy, Language Summit, Built-ins, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Astrophysics, pyproject.toml, Query Languages, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Scrapy Extensions, REST APIs, Django Sub-Commands, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Testing with nox, Async Iterators, Log Propagation, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Setuptools Deprecation, Installable Django Apps, Flask, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Great Tables, itertools, Asyncio In A Thread, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Asyncio Exceptions, Protocols, Free-Threaded CPython, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","VS Code Settings, Leaked Creds, Free-Threaded CPython, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Apple App Store, Built-Ins, Constraint Programming, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Build a Calculator, Satellite Data, Best Practices, and More",2
-"""PyCoder's Weekly"" <admin@pycoders.com>","Calendar Versioning, Rounding, Generating Test Data, and More",2
+"""PyCoder's Weekly"" <admin@pycoders.com>","Dict Comprehensions, Data Visualization, Memory Leaks, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Django vs FastAPI, Interacting With Python, Data Cleaning, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","DRF, Temp Files, Dataclasses, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Monkeypatching Django, LLMs with Python, RegExes, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","PyMyFlySpy, Set Comprehensions, State of Typing, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","PySheets, REPL Shortcuts, Empty Tests, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Sentiment Analysis, Topological Sort, Web Security, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Top 5 of 2024, Ninja, Deploying on AWS, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Web Scraping Tips, Python 3.13 Performance Boosts, Writing Interpreters & More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Debugging TUIs, Dictionary Comprehensions, Puzzles, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Web Scraping Tips, Python 3.13 Performance Boosts, Writing Interpreters & More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","PySheets, REPL Shortcuts, Empty Tests, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Sudoko in Packaging, Thread Safety, Sigstore, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Unlock Python's Pattern Matching, Combinatoric Iterators, SSH Scripting, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Lots of PEPs, More Py3.13, HPy, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Immutable Types, DuckDB & Pyodide, Free Threaded, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Python 3.13, pdb, Django Project Ideas, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Python 3.13, Rust Extensions, doctest, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","NumPy where(), Python & R, HTTP Clients, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Pydantic, PSF Office Hours, Polars, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Astronomy, Language Summit, Built-ins, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Astrophysics, pyproject.toml, Query Languages, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Scrapy Extensions, REST APIs, Django Sub-Commands, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Testing with nox, Async Iterators, Log Propagation, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Setuptools Deprecation, Installable Django Apps, Flask, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Great Tables, itertools, Asyncio In A Thread, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Asyncio Exceptions, Protocols, Free-Threaded CPython, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","VS Code Settings, Leaked Creds, Free-Threaded CPython, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Apple App Store, Built-Ins, Constraint Programming, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Build a Calculator, Satellite Data, Best Practices, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Calendar Versioning, Rounding, Generating Test Data, and More",3
 """The Batch @ DeepLearning.AI"" <thebatch@deeplearning.ai>","Amazon Nova’s Competitive Price/Performance, OpenAI o1 Pro’s High Price/Performance, Google’s Game Worlds on Tap, Factual LLMs",2
 """The Batch @ DeepLearning.AI"" <thebatch@deeplearning.ai>","DeepSeek’s Open Reasoning Model, Affordable Humanoid Robots, Texas’ Restrictive AI Law, GenAI for Electronics",2
 """The Batch @ DeepLearning.AI"" <thebatch@deeplearning.ai>",Did you miss these special issues of The Batch?,2
@@ -41,29 +42,36 @@ From,Subject,Label
 """The Batch @ DeepLearning.AI"" <thebatch@deeplearning.ai>","Top AI Stories of 2024! Agents Rise, Prices Fall, Models Shrink, Video Takes Off, Acquisitions Morph",2
 """The Batch @ DeepLearning.AI"" <thebatch@deeplearning.ai>","Tumbling Training Costs, Desktop AI Supercomputer, Tighter AI Export Restrictions, Improved Contrastive Loss ",2
 """The Batch @ DeepLearning.AI"" <thebatch@deeplearning.ai>","When Good Models Do Bad Things, What Users Really Want, More Training Data!, Better Model Merging",2
+"""The Batch @ DeepLearning.AI"" <thebatch@deeplearning.ai>","Apple Sharpens Its GenAI Profile, Hollywood Joins Copyright Fight, OpenAI Ups Reasoning Quotient, LLM Rights Historical Wrongs",2
 <finance@micpa.com.my>,Renew Your MICPA Membership for 2025 – Stay Connected and Informed!,2
 <noreply@hasil.gov.my>,PEMAKLUMAN : TARIKH AKHIR PENGGUNAAN e-DATA PCB / e-PCB / e-CP39 DAN PELAKSANAAN e-PCB PLUS,2
-Dan at Real Python <info@realpython.com>,Creating a Scalable Flask Web Application From Scratch,2
-Finance Department <invoicereminders@post.xero.com>,Bill AKI/2024/1140 from AKI CORPORATE SECRETARIAL SERVICES SDN. BHD. is due,2
-Google Payments <payments-noreply@google.com>,Google Payments: Update your tax info so payments aren't put on hold,2
-Real Python <info@realpython.com>,Building Dictionary Comprehensions in Python,2
-Real Python <info@realpython.com>,Enjoy 7 Days of Real Python Access ✨,2
-Real Python <info@realpython.com>,Explore Real Python for a full week,2
-Real Python <info@realpython.com>,Exploring Python's tuple Data Type With Examples,2
-Real Python <info@realpython.com>,Get Started With Django User Management,2
-Real Python <info@realpython.com>,"Join the Real Python Office Hours: Live & Online on Wednesday, December 18",2
-Real Python <info@realpython.com>,Programming Sockets in Python,2
-Real Python <info@realpython.com>,The Real Python Podcast – Episode #232: Exploring Modern Sentiment Analysis Approaches in Python,2
-Real Python <info@realpython.com>,Unlock Your Python Potential: Explore Real Python for a Full Week 🎉,2
-Real Python <info@realpython.com>,Ways to Start Interacting With Python,2
+Dan at Real Python <info@realpython.com>,Creating a Scalable Flask Web Application From Scratch,3
+Finance Department <invoicereminders@post.xero.com>,Bill AKI/2024/1140 from AKI CORPORATE SECRETARIAL SERVICES SDN. BHD. is due,3
+Google Payments <payments-noreply@google.com>,Google Payments: Update your tax info so payments aren't put on hold,3
+Real Python <info@realpython.com>,Building Dictionary Comprehensions in Python,3
+Real Python <info@realpython.com>,Enjoy 7 Days of Real Python Access ✨,3
+Real Python <info@realpython.com>,Explore Real Python for a full week,3
+Real Python <info@realpython.com>,Exploring Python's tuple Data Type With Examples,3
+Real Python <info@realpython.com>,Get Started With Django User Management,3
+Real Python <info@realpython.com>,"Join the Real Python Office Hours: Live & Online on Wednesday, December 18",3
+Real Python <info@realpython.com>,Programming Sockets in Python,3
+Real Python <info@realpython.com>,The Real Python Podcast – Episode #232: Exploring Modern Sentiment Analysis Approaches in Python,3
+Real Python <info@realpython.com>,Unlock Your Python Potential: Explore Real Python for a Full Week 🎉,3
+Real Python <info@realpython.com>,Ways to Start Interacting With Python,3
+"""Data Points @ DeepLearning.AI"" <datapoints@deeplearning.ai>",MiniMax’s M1 challenges DeepSeek-R1 on price and power,3
 """eInvest@TA Investment"" <investor.taim@ta.com.my>",Statement of Account (31 October 2024),3
 """eInvest@TA Investment"" <investor.taim@ta.com.my>","Transaction Advice Slip - 2 January, 2025",3
 """eInvest@TA Investment"" <investor.taim@ta.com.my>",Username Request,3
 """O'Reilly"" <reply@et.oreilly.com>","Build Your Own AI Lab registration confirmation, presented by Omar Santos",3
 """O'Reilly"" <reply@et.oreilly.com>","Recording: Build Your Own AI Lab, presented by Omar Santos",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Scaling With Kubernetes, Substrings, Big-O, and More",3
+"""PyCoder's Weekly"" <admin@pycoders.com>","Free-Threaded Update, GPU Programming, GitHub Actions, and More",3
 """Rodrigo | Mathspp"" <rodrigo@mathspp.com>",Decorating classes,3
+"""Rodrigo | Mathspp"" <rodrigo@mathspp.com>",🐍🚀 typing overloads,3
+"""Rodrigo | Mathspp"" <rodrigo@mathspp.com>",🐍🚀 how to learn idioms & good code,3
 """Touch 'n Go eWallet"" <ewallet@tngdigital.com.my>",TNG E-Wallet Reload Invoice,3
 """WordPress.com"" <hello@wordpress.com>",Your December Site Stats for Letters to Hannah and Jonathan,3
+"""WordPress.com"" <hello@wordpress.com>",Your June Site Stats for Letters to Hannah and Jonathan,3
 <edividend@cimb.com>,CIMB e-Dividend : Credit Notice,3
 <fmo.my@cgsi.com>,Attached report(s) for 02 Jan 2025 - TC0871,3
 <fmo.my@cgsi.com>,Attached report(s) for 03 Jan 2025 - TC0871,3
@@ -108,6 +116,7 @@ Bluehost <noreply@account.bluehost.com>,Domain registration expires in 31 days,3
 Bluehost <noreply@account.bluehost.com>,Notice Regarding Your Bluehost Services,3
 Bluehost <noreply@account.bluehost.com>,Reminder: Your services are going to renew,3
 Bursa <no-reply@estatement.bursamalaysia.com>,Your CDS Notice/Statement,3
+Bursa Malaysia <donotreply@bursamalaysia.com>,"MyBURSA Scheduled Maintenance: 8PM, 11 July 2025 – 13 July 2025",3
 careers-noreply@google.com,New job(s) match your search on Google Careers,3
 careers-noreply@google.com,New job(s) match your search on Google Careers,3
 careers-noreply@google.com,New job(s) match your search on Google Careers,3
@@ -117,23 +126,8 @@ careers-noreply@google.com,New job(s) match your search on Google Careers,3
 careers-noreply@google.com,New job(s) match your search on Google Careers,3
 careers-noreply@google.com,New job(s) match your search on Google Careers,3
 Celcombill@celcom.com.my,Your Celcom E-Bill Statement for December 2024,3
+CGS MY CA Notification <canoti@cgsi.com>,Cash Dividend For CAPITALAND ASCENDAS REIT as at 03/07/2025,3
 CGSI SEC MY Customer Service <customerservice.my@cgsi.com>,FW: Transfer SGD to my bank account - 51059,3
-CIMB Malaysia <cimb.marketing@cimb.com>,Principal Asia Pacific Dynamic Income Fund – Fund Update (March),3
-CIMB Malaysia <cimb.marketing@cimb.com>,TA Global Technology Fund  – Fund Update (March),3
-CIMB Malaysia <cimb.marketing@cimb.com>,Up to RM280 OFF Your Festive Holiday with #CIMBDeals!,3
-CIMB Preferred <cimb.preferred@cimb.com>,Your Exclusive Access Awaits at the Golf Lounge for CIMB Preferred,3
-CIMB Malaysia <cimb.marketing@cimb.com>,Principal Asia Pacific Dynamic Income Fund – Fund Update (March),3
-CIMB Malaysia <cimb.marketing@cimb.com>,TA Global Technology Fund  – Fund Update (March),3
-CIMB Malaysia <cimb.marketing@cimb.com>,Up to RM280 OFF Your Festive Holiday with #CIMBDeals!,3
-CIMB Preferred <cimb.preferred@cimb.com>,Your Exclusive Access Awaits at the Golf Lounge for CIMB Preferred,3
-CIMB Malaysia <cimb.marketing@cimb.com>,Principal Asia Pacific Dynamic Income Fund – Fund Update (March),3
-CIMB Malaysia <cimb.marketing@cimb.com>,TA Global Technology Fund  – Fund Update (March),3
-CIMB Malaysia <cimb.marketing@cimb.com>,Up to RM280 OFF Your Festive Holiday with #CIMBDeals!,3
-CIMB Preferred <cimb.preferred@cimb.com>,Your Exclusive Access Awaits at the Golf Lounge for CIMB Preferred,3
-CIMB Malaysia <cimb.marketing@cimb.com>,Principal Asia Pacific Dynamic Income Fund – Fund Update (March),3
-CIMB Malaysia <cimb.marketing@cimb.com>,TA Global Technology Fund  – Fund Update (March),3
-CIMB Malaysia <cimb.marketing@cimb.com>,Up to RM280 OFF Your Festive Holiday with #CIMBDeals!,3
-CIMB Preferred <cimb.preferred@cimb.com>,Your Exclusive Access Awaits at the Golf Lounge for CIMB Preferred,3
 Church Secretary <klsapc@standrewschurch.org.my>,"1st Notice of Extraordinary General Meeting (EGM) 9.45 am Sunday, 12th January 2025",3
 Church Secretary <klsapc@standrewschurch.org.my>,"3rd and Final Notice of Extraordinary General Meeting (EGM) 9.45 am Sunday, 12th January 2025",3
 Church Secretary <klsapc@standrewschurch.org.my>,EGM 12th January 2025 Election Results Announcement - 1st Notice,3
@@ -146,21 +140,39 @@ Church Secretary <klsapc@standrewschurch.org.my>,St. Andrew's Sunday Service for
 Church Secretary <klsapc@standrewschurch.org.my>,St. Andrew's Sunday Service for 22nd December 2024,3
 Church Secretary <klsapc@standrewschurch.org.my>,St. Andrew's Sunday Service for 26th January 2025,3
 Church Secretary <klsapc@standrewschurch.org.my>,St. Andrew's Sunday Service for 5th January 2025,3
+Church Secretary <klsapc@standrewschurch.org.my>,"Notice of Annual General Meeting (AGM) - Sunday, 3rd August 2025",3
+Church Secretary <klsapc@standrewschurch.org.my>,St. Andrew's Sunday Service for 13th July 2025,3
 CIMB Clicks <cimbclicks@cimb.com>,Message from CIMB Clicks -Funds Transfer to Other Banks,3
+CIMB Malaysia <cimb.marketing@cimb.com>,Principal Asia Pacific Dynamic Income Fund – Fund Update (March),3
+CIMB Malaysia <cimb.marketing@cimb.com>,TA Global Technology Fund  – Fund Update (March),3
+CIMB Malaysia <cimb.marketing@cimb.com>,Up to RM280 OFF Your Festive Holiday with #CIMBDeals!,3
+CIMB Malaysia <cimb.marketing@cimb.com>,Principal Asia Pacific Dynamic Income Fund – Fund Update (March),3
+CIMB Malaysia <cimb.marketing@cimb.com>,TA Global Technology Fund  – Fund Update (March),3
+CIMB Malaysia <cimb.marketing@cimb.com>,Up to RM280 OFF Your Festive Holiday with #CIMBDeals!,3
+CIMB Malaysia <cimb.marketing@cimb.com>,Principal Asia Pacific Dynamic Income Fund – Fund Update (March),3
+CIMB Malaysia <cimb.marketing@cimb.com>,TA Global Technology Fund  – Fund Update (March),3
+CIMB Malaysia <cimb.marketing@cimb.com>,Up to RM280 OFF Your Festive Holiday with #CIMBDeals!,3
+CIMB Malaysia <cimb.marketing@cimb.com>,Principal Asia Pacific Dynamic Income Fund – Fund Update (March),3
+CIMB Malaysia <cimb.marketing@cimb.com>,TA Global Technology Fund  – Fund Update (March),3
+CIMB Malaysia <cimb.marketing@cimb.com>,Up to RM280 OFF Your Festive Holiday with #CIMBDeals!,3
 CIMB Malaysia eStatement <noreply@e-statement.cimb.com>,CIMB Islamic Bank eStatement (December 2024) / ePenyata CIMB Islamic Bank (Disember 2024),3
 CIMB Malaysia eStatement <noreply@e-statement.cimb.com>,CIMB Islamic Bank eStatement (January 2025) / ePenyata CIMB Islamic Bank (Januari 2025),3
 CIMB Malaysia eStatement <noreply@e-statement.cimb.com>,Your CIMB Bank Consolidated eStatement (December 2024) / ePenyata bersepadu CIMB Bank (Disember 2024),3
 CIMB Malaysia eStatement <noreply@e-statement.cimb.com>,Your CIMB Bank Credit Card e-Statement (DEC 2024) / ePenyata Kad Kredit CIMB Bank anda (DEC 2024),3
 CIMB Malaysia eStatement <noreply@e-statement.cimb.com>,Your CIMB Bank Credit Card e-Statement (JAN 2025) / ePenyata Kad Kredit CIMB Bank anda (JAN 2025),3
 CIMB Malaysia eStatement <noreply@e-statement.cimb.com>,Your CIMB Bank eStatement (January 2025) / ePenyata CIMB Bank (Januari 2025),3
+CIMB Preferred <cimb.preferred@cimb.com>,Your Exclusive Access Awaits at the Golf Lounge for CIMB Preferred,3
+CIMB Preferred <cimb.preferred@cimb.com>,Your Exclusive Access Awaits at the Golf Lounge for CIMB Preferred,3
+CIMB Preferred <cimb.preferred@cimb.com>,Your Exclusive Access Awaits at the Golf Lounge for CIMB Preferred,3
+CIMB Preferred <cimb.preferred@cimb.com>,Your Exclusive Access Awaits at the Golf Lounge for CIMB Preferred,3
 CIMB Preferred <cimb.preferred@cimb.com>,CIO Views: Weekly Market Recap,3
 Citibank Malaysia <paylink.asia@citi.com>,Payment Advice-BG_EDG9502024122700540037_19158_950,3
-Climatebase <sfclimateweek@climatebase.org>,🎉 Announcing: SF Climate Week 2025 – April 19-27 | How To Get Involved,3
-Climatebase Weekly <team@climatebase.org>,An Agreement on Plastics Fails,3
-Climatebase Weekly <team@climatebase.org>,The $8 Billion Climate Solution That’s Taking on Climate Denial: Coalitions,3
-Climatebase Weekly <team@climatebase.org>,The LA Fires Augur in a New World,3
-Climatebase Weekly <team@climatebase.org>,This Year In Climate ✨,3
-Climatebase Weekly <team@climatebase.org>,Wall Street Retreats from Climate Pledge,3
+Climatebase <sfclimateweek@climatebase.org>,🎉 Announcing: SF Climate Week 2025 – April 19-27 | How To Get Involved,4
+Climatebase Weekly <team@climatebase.org>,An Agreement on Plastics Fails,4
+Climatebase Weekly <team@climatebase.org>,The $8 Billion Climate Solution That’s Taking on Climate Denial: Coalitions,4
+Climatebase Weekly <team@climatebase.org>,The LA Fires Augur in a New World,4
+Climatebase Weekly <team@climatebase.org>,This Year In Climate ✨,4
+Climatebase Weekly <team@climatebase.org>,Wall Street Retreats from Climate Pledge,4
 contracts.my@cgsi.com,Your Monthly Statement 31/12/2024-51059,3
 CustCare - Exabytes <custcare@exabytes.my>,REMINDER (Action Required) Important Update: Register to Receive E-Invoice,3
 Customer Service <customer.service@u.com.my>,[U Mobile] Assistance with Product & Services,3
@@ -179,6 +191,7 @@ GitHub <noreply@github.com>,Your GitHub Copilot access has been renewed,3
 gogreen-my@greateasternlife.com,Your Cash Bonus Statement is Ready in eConnect,3
 Google <families-noreply@google.com>,GitHub installed on Jonathan's device,3
 Google <families-noreply@google.com>,MyRapid PULSE installed on Jonathan's device,3
+Google <no-reply@accounts.google.com>,Security alert for hadmin@hopeww.org.my,3
 Google AdSense <adsense-noreply@google.com>,You need to fix some issues before your site is ready for AdSense,3
 Google AdSense <adsense-noreply@google.com>,[Important information] AdSense Account Inactivity on pub-9619773157619761,3
 Google AI for Developers <Google-AI-noreply@google.com>,Introducing PaliGemma 2,3
@@ -200,6 +213,7 @@ Google Calendar <calendar-notification@google.com>,"Notification: Recharge car t
 Google Calendar <calendar-notification@google.com>,"Notification: review investment opportunities @ Wed Jan 15, 2025 12pm - 1pm (MYT) (kosiew@gmail.com)",3
 Google Calendar <calendar-notification@google.com>,"Notification: settle tithe @ Sat Dec 21, 2024 9am - 10am (MYT) (kosiewmm)",3
 Google Calendar <calendar-notification@google.com>,"Notification: transfer 700 to Lee Lynne @ Wed Jan 1, 2025 12pm - 1pm (MYT) (kosiewmm)",3
+Google Calendar <calendar-notification@google.com>,"Notification: Ling Hwa Ming's son Jarren's birthday Jul 14 @ Mon Jul 14, 2025 (kosiewmm)",3
 Google Developer Program <googledev-noreply@google.com>,"Build better with AI: Vertex AI RAG, Veo + Imagen 3, and more.",3
 Google Developer Program <googledev-noreply@google.com>,"Introducing Gemini 2.0, PaliGemma2, plus Android XR and more",3
 Grab <no-reply@grab.com>,Passkey created,3
@@ -246,11 +260,15 @@ Indeed <alert@indeed.com>,Senior Data Engineer at Encora and 11 more data engine
 Indeed <alert@indeed.com>,Software Engineer at Questrive Tech Sdn Bhd and 17 more data engineer jobs in Kuala Lumpur for you!,3
 Indeed <alert@indeed.com>,Test Development Engineer at Cultivar Asia and 16 more data engineer jobs in Kuala Lumpur for you!,3
 Indeed <alert@indeed.com>,Test Development Engineer at Cultivar Asia and 19 more data engineer jobs in Kuala Lumpur for you!,3
+Indeed <alert@indeed.com>,ETL Data Engineer at Abhidi Solution Private Limited and 8 more data engineer jobs in Kuala Lumpur for you!,3
+Indeed <alert@indeed.com>,ETL Data Engineer at Abhidi Solution Private Limited and 10 more data engineer jobs in Kuala Lumpur for you!,3
+Instarem <donotreply@instarem.com>,You've just received money from OI LIN,3
 Instarem <donotreply@instarem.com>,You've just received money from OI LIN,3
 JavaScript Weekly <jsw@peterc.org>,A 2024 JavaScript retrospective,3
 JavaScript Weekly <jsw@peterc.org>,An introduction to building live collaborative JS apps,3
 JavaScript Weekly <jsw@peterc.org>,Benchmarking Node's recent performance enhancements,3
 JavaScript Weekly <jsw@peterc.org>,The projects that shaped JavaScript in 2024,3
+JavaScript Weekly <jsw@peterc.org>,The details of TC39's last meeting,3
 jobs@automattic.com,Your application to work at Automattic – Kam Onn Siew,3
 Kaggle <noreply@kaggle.com>,Competition Launch: Konwinski Prize,3
 Kaggle <noreply@kaggle.com>,Introducing FACTS: Benchmark Your Model’s Factuality,3
@@ -263,8 +281,8 @@ Kevin Powell <hi@kevinpowell.co>,Special Announcement: My New Frontend Masters C
 Kevin Powell <hi@kevinpowell.co>,Year in review and my plans for 2025,3
 Kumpulan Wang Simpanan Pekerja <epostedlist@epf.gov.my>,PENYATA CARUMAN MAJIKAN (e-POSTED LIST) BAGI CARUMAN BULAN 01/2025 BEVENTURE SDN. BHD..,3
 Kumpulan Wang Simpanan Pekerja <epostedlist@epf.gov.my>,PENYATA CARUMAN MAJIKAN (e-POSTED LIST) BAGI CARUMAN BULAN 12/2024 BEVENTURE SDN. BHD..,3
-Lazada Malaysia <noreply@support.lazada.com.my>,Delivery of your Order 460195879022130,3
-Lazada Malaysia <noreply@support.lazada.com.my>,Delivery of your Order 460806130222130,3
+Lazada Malaysia <noreply@support.lazada.com.my>,Delivery of your Order 460195879022130,4
+Lazada Malaysia <noreply@support.lazada.com.my>,Delivery of your Order 460806130222130,4
 Lazada Malaysia <noreply@support.lazada.com.my>,E-Invoice for MYLVGTI2024120001206143 - Siew Kam Onn,3
 Lazada Malaysia <noreply@support.lazada.com.my>,Lazada E-Invoicing Announcement,3
 Lazada Malaysia <noreply@support.lazada.com.my>,Receipt for order 448893001622130,3
@@ -277,6 +295,7 @@ M2U Bills <m2u@bills.maybank2u.com.my>,Credit Card Statement January 2025,3
 M2U Statements <m2u@stmts.maybank2u.com.my>,Combined Statement December 2024,3
 M2U Statements <m2u@stmts.maybank2u.com.my>,Current Account Statement December 2024,3
 M2U Statements <m2u@stmts.maybank2u.com.my>,Investment Statement December 2024,3
+m2u@maybank.com.my,You've received money in your Maybank account,3
 m2u@maybank.com.my,You've received money in your Maybank account,3
 Malaysian Institute of Accountants <mia@mia.org.my>,MIA Town Hall 2024/2025,3
 Malaysian Institute of Accountants <pd@mia.org.my>,Capital Gains Tax and Real Property Gains Tax,3
@@ -302,6 +321,7 @@ MICPA <membership@micpa.com.my>,"MICPA Member Updates | December 13, 2024",3
 MICPA <membership@micpa.com.my>,"MICPA Member Updates | December 20, 2024",3
 MICPA <membership@micpa.com.my>,"MICPA Member Updates | January 10, 2025",3
 MICPA <membership@micpa.com.my>,"MICPA Member Updates | January 3, 2025",3
+MICPA <membership@micpa.com.my>,"MICPA Member Updates |July 11, 2025",3
 MICPA Bi-Monthly Journal <info@micpa.com.my>,The Malaysian Accountant (Nov - Dec 2024 Members' Issue),3
 Microsoft Family Safety <familysafety@microsoft.com>,Weekly activity report for Hannah,3
 Microsoft Family Safety <familysafety@microsoft.com>,Weekly activity report for jonathan,3
@@ -314,6 +334,7 @@ noreply@notification.airasia.com,Your Airasia Ride Receipt,3
 noreply+subscribe@blogger.com,Comment subscription request from 'Solis V',3
 Public Mutual <e-statement@publicmutual.com.my>,Monthly Statement,3
 Public Mutual Berhad <fadm@publicmutual.com.my>,Distribution Declaration Notification,3
+Python Weekly <rahul@pythonweekly.com>,Python Weekly - Issue 704,3
 React Digest <jakub@reactdigest.net>,RD#484 How To Improve Interaction-to-Next-Paint,3
 React Digest <jakub@reactdigest.net>,RD#485 Architectures of modern front-end applications,3
 React Digest <jakub@reactdigest.net>,RD#486 (React) Things I Regret Not Knowing Earlier,3
@@ -348,6 +369,10 @@ StashAway Weekly Buzz <support@stashaway.my>,🍷 The Fed reined in the party be
 StashAway Weekly Buzz <support@stashaway.my>,🎊 New year’s resolutions of the world's biggest economies,3
 SYNTAX TECHNOLOGIES SDN BHD <bryan.cheong@syntech.com.my>,𝐇𝐨𝐰 𝐝𝐨 𝐲𝐨𝐮 𝐡𝐚𝐧𝐝𝐥𝐞 𝐒𝐭𝐚𝐟𝐟 𝐂𝐥𝐚𝐢𝐦𝐬 𝐢𝐧 𝐭𝐡𝐞 𝐄 - 𝐈𝐧𝐯𝐨𝐢𝐜𝐞 𝐄𝐫𝐚❓𝐁𝐫𝐲𝐚𝐧 𝐂𝐡𝐞𝐨𝐧𝐠 𝐄-𝐈𝐧𝐯𝐨𝐢𝐜𝐞 𝐖𝐞𝐛𝐢𝐧𝐚𝐫 [𝐅𝐞𝐛𝐫𝐮𝐚𝐫𝐲 𝟐𝟎𝟐𝟓],3
 TED Membership <members@ted.com>,Your invitation to reactivate the spark of ideas,3
+TED Recommends <recommends@ted.com>,"An ER doctor on triaging your ""crazy busy"" life",3
+TED Recommends <recommends@ted.com>,"Flow, the secret to happiness",3
+TED Recommends <recommends@ted.com>,How AI could save (not destroy) education,3
+TED Recommends <recommends@ted.com>,The single most important parenting strategy,3
 The Edge Malaysia <emailalerts@theedgemarkets.com>,"CEO Morning Brief - December 12, 2024",3
 The Edge Malaysia <emailalerts@theedgemarkets.com>,"CEO Morning Brief - December 13, 2024",3
 The Edge Malaysia <emailalerts@theedgemarkets.com>,"CEO Morning Brief - December 17, 2024",3
@@ -372,6 +397,7 @@ The Edge Malaysia <emailalerts@theedgemarkets.com>,"CEO Morning Brief - January 
 The Edge Malaysia <emailalerts@theedgemarkets.com>,"CEO Morning Brief - January 7, 2025",3
 The Edge Malaysia <emailalerts@theedgemarkets.com>,"CEO Morning Brief - January 8, 2025",3
 The Edge Malaysia <emailalerts@theedgemarkets.com>,"CEO Morning Brief - January 9, 2025",3
+The Edge Malaysia <emailalerts@theedgemarkets.com>,"CEO Morning Brief - July 11, 2025",3
 Total TypeScript <team@totaltypescript.com>,Last Call: Total TypeScript Price Goes Up at Midnight,3
 U Mobile <do-not-reply@u.com.my>,Pengesahan kemaskini e-mel,3
 U Mobile <do-not-reply@u.com.my>,U Mobile TAC Verification Code,3
@@ -774,10 +800,6 @@ Support - Exabytes <support@exabytes.my>,Case #10574137 - My site is down Resolv
 Support - Exabytes <support@exabytes.my>,Re: Case #10574137 - My site is down,4
 Support - Exabytes <support@exabytes.my>,Tell us what you think of your support experience,4
 Support - Exabytes <support@exabytes.my>,We look forward to receiving a reply at case #10574137 - My site is down,4
-TED Recommends <recommends@ted.com>,"An ER doctor on triaging your ""crazy busy"" life",3
-TED Recommends <recommends@ted.com>,"Flow, the secret to happiness",3
-TED Recommends <recommends@ted.com>,How AI could save (not destroy) education,3
-TED Recommends <recommends@ted.com>,The single most important parenting strategy,3
 TextExpander <no-reply@textexpander.com>,Your Weekly TextExpander Report,4
 TextExpander <no-reply@textexpander.com>,Your Weekly TextExpander Report,4
 The 1916 Company Pre-Owned <newsletter@marketing.the1916company.com>,Fresh Pre-Owned Finds Just Landed,4
